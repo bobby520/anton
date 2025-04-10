@@ -1,174 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Anton Oilfield Services DMCC - Driving Record</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
-    background-color: #f5f5f5;
-    min-height: 100vh;
-}
-
-.form-container {
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.header {
-    text-align: center;
-    margin-bottom: 25px;
-}
-
-.company-logo {
-    height: 40px;
-    margin-bottom: 10px;
-}
-
-.form-section {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
-}
-
-#export-container {
-    display: none;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 3px 15px rgba(0,0,0,0.1);
-    padding: 25px;
-    max-width: 100%;
-    width: 420px;
-    margin: 20px auto;
-    position: relative;
-}
-
-.export-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-}
-
-.qr-container {
-    width: 90px;
-    height: 90px;
-    margin-left: 15px;
-    flex-shrink: 0;
-}
-
-.summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-}
-
-.summary-item {
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    break-inside: avoid;
-}
-
-.summary-label {
-    color: #2c3e50;
-    font-weight: 600;
-    display: inline-block;
-    width: 100px;
-    font-size: 14px;
-}
-
-.form-group {
-    margin-bottom: 18px;
-}
-
-label {
-    display: block;
-    margin-bottom: 6px;
-    font-weight: 600;
-    color: #444;
-}
-
-input, select, button {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    box-sizing: border-box;
-    font-size: 15px;
-}
-
-button {
-    background: #1AAD19;
-    color: white;
-    border: none;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 10px;
-}
-
-button:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
-}
-
-@media (max-width: 480px) {
-    body {
-        padding: 15px;
-    }
-    
-    .form-section {
-        padding: 18px;
-    }
-    
-    .summary-label {
-        width: 85px;
-    }
-    
-    .qr-container {
-        width: 80px;
-        height: 80px;
-    }
-}
-
-.hidden-item {
-    display: none !important;
-}
-
-.total-cost {
-    background: #e3f2fd !important;
-    border: 1px solid #bbdefb !important;
-}
-
-.overtime-details {
-    background: #fff3e0;
-    padding: 12px;
-    border-radius: 8px;
-    margin: 12px 0;
-}
-
-.overtime-row {
-    display: flex;
-    justify-content: space-between;
-    margin: 5px 0;
-    font-size: 13px;
-    line-height: 1.4;
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anton Oilfield Services DMCC - Driving Record</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .company-logo {
+            height: 30px;
+            margin-bottom: 8px;
+        }
+        .form-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group { 
+            margin-bottom: 12px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 4px; 
+            font-weight: bold; 
+            color: #444;
+        }
+        input, select, button { 
+            width: 100%; 
+            padding: 8px; 
+            margin-bottom: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 3px; 
+            box-sizing: border-box;
+        }
+        button { 
+            background-color: #1AAD19;
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            padding: 10px 0;
+        }
+        #export-container {
+            display: none;
+            width: 360px;
+            margin: 15px auto;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-direction: column;
+        }
+        .export-logo {
+            height: 30px;
+            margin: 0 auto 10px;
+            display: block;
+        }
+        .export-title {
+            text-align: center;
+            font-size: 1em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+        }
+        #qrcode-section {
+            text-align: center;
+            margin-top: 15px;
+            padding: 10px;
+        }
+        #qrcode-section canvas {
+            width: 150px !important;
+            height: 150px !important;
+        }
+        .summary-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .summary-label {
+            color: #666;
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+        }
+        .total-cost {
+            background: #e3f2fd !important;
+            font-weight: bold;
+            border: 1px solid #bbdefb;
+        }
+        .overtime-details {
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .overtime-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+        }
+        @media (max-width: 480px) {
+            .form-group input {
+                font-size: 14px;
+            }
+            .summary-label {
+                width: 90px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="form-container">
     <div class="header">
         <img src="https://raw.githubusercontent.com/bobby520/car-log-form/main/company-logo.png"
-             class="company-logo"
+             class="company-logo" 
              alt="Company Logo">
         <h2>Anton Oilfield Services DMCC Driving System</h2>
     </div>
@@ -228,446 +187,327 @@ button:hover {
 
         <div class="form-group">
             <label>Fuel Cost (AED):</label>
-            <input type="number" id="fuel" min="0" step="5">
+            <input type="number" id="fuel" min="0" step="5" required>
         </div>
 
         <div class="form-group">
             <label>Parking Fee (AED):</label>
-            <input type="number" id="parking" min="0" step="5">
+            <input type="number" id="parking" min="0" step="5" required>
         </div>
 
         <div class="form-group">
             <label>Taxi Fare (AED):</label>
-            <input type="number" id="taxi" min="0" step="5">
+            <input type="number" id="taxi" min="0" step="5" required>
         </div>
 
-        <!-- 新增洗车费 -->
+        <div class="form-group">
+            <label>Vehicle Maintenance (AED):</label>
+            <input type="number" id="repair" min="0" step="5" value="0" required>
+        </div>
+
         <div class="form-group">
             <label>Car Wash (AED):</label>
-            <input type="number" id="car-wash" min="0" step="5">
+            <input type="number" id="wash" min="0" step="5" value="0" required>
         </div>
 
-        <!-- 新增修车费 -->
-        <div class="form-group">
-            <label>Repair Cost (AED):</label>
-            <input type="number" id="repair" min="0" step="5">
-        </div>
-
-        <button onclick="saveDraft()">Save Draft</button>
         <button onclick="generateAndShare()">Generate QR Code</button>
     </div>
-</div>
 
-<div id="export-container">
-    <div class="export-header">
+    <div id="export-container">
         <img src="https://raw.githubusercontent.com/bobby520/car-log-form/main/company-logo.png"
-             class="company-logo"
+             class="export-logo"
              alt="Company Logo">
-        <div class="qr-container" id="qrcode-section"></div>
-    </div>
-
-    <div class="summary-grid">
-        <div class="summary-item">
-            <span class="summary-label">Driver:</span>
-            <span id="show-driver"></span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Date:</span>
-            <span id="show-date"></span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">License Plate:</span>
-            <span id="show-plate"></span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Booked by:</span>
-            <span id="show-booker"></span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Start Time:</span>
-            <span id="show-start-time"></span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">End Time:</span>
-            <span id="show-end-time"></span>
-        </div>
-        <div class="summary-item">
-            <span class="summary-label">Odometer:</span>
-            <span id="show-odo"></span>
-        </div>
-        <div class="summary-item hidden-item" id="fuel-item">
-            <span class="summary-label">Fuel Cost:</span>
-            <span id="show-fuel"></span>
-        </div>
-        <div class="summary-item hidden-item" id="parking-item">
-            <span class="summary-label">Parking Fee:</span>
-            <span id="show-parking"></span>
-        </div>
-        <div class="summary-item hidden-item" id="taxi-item">
-            <span class="summary-label">Taxi Fare:</span>
-            <span id="show-taxi"></span>
-        </div>
-        <div class="summary-item hidden-item" id="car-wash-item">
-            <span class="summary-label">Car Wash:</span>
-            <span id="show-car-wash"></span>
-        </div>
-        <div class="summary-item hidden-item" id="repair-item">
-            <span class="summary-label">Repair Cost:</span>
-            <span id="show-repair"></span>
-        </div>
-        <div class="overtime-details hidden-item" id="overtime-section">
+        <div class="export-title">Driving Record Summary</div>
+        
+        <div id="summary-section">
             <div class="summary-item">
-                <span class="summary-label">Overtime:</span>
-                <span id="show-overtime"></span>
+                <span class="summary-label">Driver:</span>
+                <span id="show-driver"></span>
             </div>
-            <div id="overtime-breakdown"></div>
+            <div class="summary-item">
+                <span class="summary-label">Date:</span>
+                <span id="show-date"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">License Plate:</span>
+                <span id="show-plate"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Booked by:</span>
+                <span id="show-booker"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Start Time:</span>
+                <span id="show-start-time"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">End Time:</span>
+                <span id="show-end-time"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Odometer:</span>
+                <span id="show-odo"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Fuel Cost:</span>
+                <span id="show-fuel"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Parking Fee:</span>
+                <span id="show-parking"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Taxi Fare:</span>
+                <span id="show-taxi"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Maintenance:</span>
+                <span id="show-repair"></span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Car Wash:</span>
+                <span id="show-wash"></span>
+            </div>
+            <div class="overtime-details">
+                <div class="summary-item">
+                    <span class="summary-label">Overtime:</span>
+                    <span id="show-overtime"></span>
+                </div>
+                <div id="overtime-breakdown"></div>
+            </div>
+            <div class="summary-item total-cost">
+                <span class="summary-label">Total Cost:</span>
+                <span id="show-total"></span>
+            </div>
         </div>
-        <div class="summary-item total-cost">
-            <span class="summary-label">Total Cost:</span>
-            <span id="show-total"></span>
-        </div>
+        <div id="qrcode-section"></div>
     </div>
-</div>
 
-<script>
-let generatedImageElement = null;
+    <script>
+        let generatedImageElement = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    const dateInput = document.getElementById('date');
-    const now = new Date();
-    const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    dateInput.value = localDate.toISOString().substring(0, 10);
-});
-
-document.getElementById('plate').addEventListener('change', function() {
-    if (this.value === 'Other') {
-        const manualPlate = prompt('Enter license plate:');
-        if (manualPlate) {
-            const newOption = document.createElement('option');
-            newOption.value = manualPlate;
-            newOption.textContent = manualPlate;
-            this.appendChild(newOption);
-            this.value = manualPlate;
-        }
-    }
-});
-
-function saveDraft() {
-    const driver = document.getElementById('driver').value;
-    if (!driver) {
-        alert('Please select driver first');
-        return;
-    }
-    
-    const formData = {
-        driver: driver,
-        date: document.getElementById('date').value,
-        plate: document.getElementById('plate').value,
-        name: document.getElementById('name').value,
-        startTime: document.getElementById('start-time').value,
-        startKm: document.getElementById('start-km').value,
-        endTime: document.getElementById('end-time').value,
-        endKm: document.getElementById('end-km').value,
-        fuel: document.getElementById('fuel').value,
-        parking: document.getElementById('parking').value,
-        taxi: document.getElementById('taxi').value,
-        carWash: document.getElementById('car-wash').value,
-        repair: document.getElementById('repair').value
-    };
-    
-    localStorage.setItem(`draft_${driver}`, JSON.stringify(formData));
-}
-
-function loadDraft() {
-    const driver = document.getElementById('driver').value;
-    if (!driver) return;
-    
-    const draft = localStorage.getItem(`draft_${driver}`);
-    if (draft) {
-        const formData = JSON.parse(draft);
-        document.getElementById('date').value = formData.date;
-        document.getElementById('plate').value = formData.plate;
-        document.getElementById('name').value = formData.name;
-        document.getElementById('start-time').value = formData.startTime;
-        document.getElementById('start-km').value = formData.startKm;
-        document.getElementById('end-time').value = formData.endTime;
-        document.getElementById('end-km').value = formData.endKm;
-        document.getElementById('fuel').value = formData.fuel;
-        document.getElementById('parking').value = formData.parking;
-        document.getElementById('taxi').value = formData.taxi;
-        document.getElementById('car-wash').value = formData.carWash;
-        document.getElementById('repair').value = formData.repair;
-        
-        if (formData.plate === 'Other') {
-            const manualPlate = prompt('Enter license plate:');
-            if (manualPlate) {
-                const select = document.getElementById('plate');
-                const newOption = document.createElement('option');
-                newOption.value = manualPlate;
-                newOption.textContent = manualPlate;
-                select.appendChild(newOption);
-                select.value = manualPlate;
-            }
-        }
-    }
-}
-
-document.getElementById('driver').addEventListener('change', function() {
-    loadDraft();
-    syncFormData();
-});
-
-setInterval(() => {
-    const driver = document.getElementById('driver').value;
-    if (driver) saveDraft();
-}, 10000);
-
-function validateForm() {
-    const requiredFields = [
-        'driver', 'date', 'plate', 'name',
-        'start-time', 'end-time', 'start-km', 'end-km'
-    ];
-    
-    for (const fieldId of requiredFields) {
-        const field = document.getElementById(fieldId);
-        if (!field.value.trim()) {
-            alert(`请填写必填字段：${field.labels[0].textContent}`);
-            field.focus();
-            return false;
-        }
-    }
-    
-    const startKm = +document.getElementById("start-km").value;
-    const endKm = +document.getElementById("end-km").value;
-    if (endKm <= startKm) {
-        alert("Error: End odometer must be greater than start!");
-        return false;
-    }
-    
-    return true;
-}
-
-function calculateOvertime() {
-    const start = document.getElementById('start-time').value;
-    const end = document.getElementById('end-time').value;
-    const dateInput = document.getElementById('date').value;
-
-    if (!start || !end || !dateInput) return { total: 0, breakdown: [] };
-
-    let currentDate = new Date(dateInput);
-    const startDateTime = new Date(`${currentDate.toISOString().slice(0,10)}T${start}`);
-    let endDateTime = new Date(`${currentDate.toISOString().slice(0,10)}T${end}`);
-    
-    if (endDateTime < startDateTime) endDateTime.setDate(endDateTime.getDate() + 1);
-
-    const timeSegments = [];
-    let currentStart = startDateTime;
-    
-    while (currentStart < endDateTime) {
-        let currentEnd = new Date(currentStart);
-        currentEnd.setHours(24, 0, 0, 0);
-        if (currentEnd > endDateTime) currentEnd = endDateTime;
-        
-        timeSegments.push({
-            start: new Date(currentStart),
-            end: new Date(currentEnd),
-            date: new Date(currentStart)
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('date');
+            const now = new Date();
+            const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            dateInput.value = localDate.toISOString().substring(0, 10);
         });
-        
-        currentStart = new Date(currentEnd);
-        currentStart.setSeconds(currentStart.getSeconds() + 1);
-    }
 
-    let totalOvertime = 0;
-    const breakdown = [];
-
-    timeSegments.forEach(segment => {
-        const isWeekend = [0, 6].includes(segment.date.getDay());
-        const NORMAL_START = 8;
-        const NORMAL_END = 17;
-        
-        const calculateHours = (start, end) => {
-            return Number(((end - start) / 3600000).toFixed(2));
-        };
-
-        if (!isWeekend) {
-            const earlyEnd = new Date(segment.start);
-            earlyEnd.setHours(NORMAL_START, 0, 0, 0);
-            if (segment.start < earlyEnd) {
-                const actualEnd = segment.end < earlyEnd ? segment.end : earlyEnd;
-                const hours = calculateHours(segment.start, actualEnd);
-                if (hours > 0) {
-                    const amount = hours * 20;
-                    breakdown.push({
-                        type: 'Early Overtime',
-                        hours: hours.toFixed(2),
-                        rate: 20,
-                        amount: +amount.toFixed(2),
-                        date: segment.date.toISOString().slice(0,10)
-                    });
-                    totalOvertime += amount;
+        document.getElementById('plate').addEventListener('change', function() {
+            if (this.value === 'Other') {
+                const manualPlate = prompt('Enter license plate:');
+                if (manualPlate) {
+                    const newOption = document.createElement('option');
+                    newOption.value = manualPlate;
+                    newOption.textContent = manualPlate;
+                    this.appendChild(newOption);
+                    this.value = manualPlate;
                 }
             }
+        });
 
-            const lateStart = new Date(segment.start);
-            lateStart.setHours(NORMAL_END, 0, 0, 0);
-            if (segment.end > lateStart) {
-                const actualStart = segment.start > lateStart ? segment.start : lateStart;
-                const hours = calculateHours(actualStart, segment.end);
-                if (hours > 0) {
-                    const amount = hours * 20;
-                    breakdown.push({
-                        type: 'Late Overtime',
-                        hours: hours.toFixed(2),
-                        rate: 20,
-                        amount: +amount.toFixed(2),
-                        date: segment.date.toISOString().slice(0,10)
-                    });
-                    totalOvertime += amount;
-                }
+        function splitTimeSegments(start, end) {
+            const segments = [];
+            let current = new Date(start);
+            
+            while (current < end) {
+                const nextDay = new Date(current);
+                nextDay.setDate(current.getDate() + 1);
+                nextDay.setHours(0, 0, 0, 0);
+                
+                const segmentEnd = new Date(Math.min(end, nextDay));
+                segments.push({
+                    start: new Date(current),
+                    end: new Date(segmentEnd),
+                    isWeekend: [0, 6].includes(current.getDay())
+                });
+                
+                current = segmentEnd;
             }
+            return segments;
         }
-        else {
-            const hours = calculateHours(segment.start, segment.end);
-            const amount = hours * 25;
-            breakdown.push({
-                type: 'Weekend Overtime',
-                hours: hours.toFixed(2),
-                rate: 25,
-                amount: +amount.toFixed(2),
-                date: segment.date.toISOString().slice(0,10)
+
+        function calculateOvertime() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const dateStr = document.getElementById('date').value;
+
+            if (!startTime || !endTime || !dateStr) return { total: 0, breakdown: [] };
+
+            const start = new Date(`${dateStr}T${startTime}`);
+            let end = new Date(`${dateStr}T${endTime}`);
+            if (end < start) end.setDate(end.getDate() + 1);
+
+            const segments = splitTimeSegments(start, end);
+            let totalOvertime = 0;
+            const breakdown = [];
+
+            segments.forEach(segment => {
+                const hours = (segment.end - segment.start) / 3600000;
+                const rate = segment.isWeekend ? 25 : 20;
+                const amount = Math.round(hours * rate * 100) / 100;
+                
+                breakdown.push({
+                    type: segment.isWeekend ? 'Weekend' : 'Weekday',
+                    date: segment.start.toISOString().split('T')[0],
+                    hours: hours.toFixed(2),
+                    rate: rate,
+                    amount: amount
+                });
+                
+                totalOvertime += amount;
             });
-            totalOvertime += amount;
+
+            return { 
+                total: Math.round(totalOvertime * 100) / 100, 
+                breakdown: breakdown 
+            };
         }
-    });
 
-    return {
-        total: +totalOvertime.toFixed(2),
-        breakdown: breakdown
-    };
-}
+        function syncFormData() {
+            document.getElementById('show-driver').textContent = document.getElementById('driver').value;
+            document.getElementById('show-date').textContent = document.getElementById('date').value;
+            document.getElementById('show-plate').textContent = document.getElementById('plate').value;
+            document.getElementById('show-booker').textContent = document.getElementById('name').value;
+            document.getElementById('show-start-time').textContent = document.getElementById('start-time').value;
+            document.getElementById('show-end-time').textContent = document.getElementById('end-time').value;
+            document.getElementById('show-odo').textContent = 
+                `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
-function syncFormData() {
-    document.getElementById('show-driver').textContent = document.getElementById('driver').value;
-    document.getElementById('show-date').textContent = document.getElementById('date').value;
-    document.getElementById('show-plate').textContent = document.getElementById('plate').value;
-    document.getElementById('show-booker').textContent = document.getElementById('name').value;
-    document.getElementById('show-start-time').textContent = document.getElementById('start-time').value;
-    document.getElementById('show-end-time').textContent = document.getElementById('end-time').value;
-    document.getElementById('show-odo').textContent =
-        `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
+            const fuel = +document.getElementById('fuel').value || 0;
+            const parking = +document.getElementById('parking').value || 0;
+            const taxi = +document.getElementById('taxi').value || 0;
+            const repair = +document.getElementById('repair').value || 0;
+            const wash = +document.getElementById('wash').value || 0;
+            
+            document.getElementById('show-fuel').textContent = `${fuel} AED`;
+            document.getElementById('show-parking').textContent = `${parking} AED`;
+            document.getElementById('show-taxi').textContent = `${taxi} AED`;
+            document.getElementById('show-repair').textContent = `${repair} AED`;
+            document.getElementById('show-wash').textContent = `${wash} AED`;
 
-    const fuel = +document.getElementById('fuel').value || 0;
-    const parking = +document.getElementById('parking').value || 0;
-    const taxi = +document.getElementById('taxi').value || 0;
-    const carWash = +document.getElementById('car-wash').value || 0;
-    const repair = +document.getElementById('repair').value || 0;
-    const overtime = calculateOvertime();
+            const overtime = calculateOvertime();
+            document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
+            
+            const breakdownDiv = document.getElementById('overtime-breakdown');
+            breakdownDiv.innerHTML = overtime.breakdown.map(item => `
+                <div class="overtime-row">
+                    <span>${item.date} (${item.type})</span>
+                    <span>${item.hours}h × ${item.rate}AED</span>
+                    <span>${item.amount}AED</span>
+                </div>
+            `).join('');
 
-    document.getElementById('fuel-item').classList.toggle('hidden-item', fuel <= 0);
-    document.getElementById('parking-item').classList.toggle('hidden-item', parking <= 0);
-    document.getElementById('taxi-item').classList.toggle('hidden-item', taxi <= 0);
-    document.getElementById('car-wash-item').classList.toggle('hidden-item', carWash <= 0);
-    document.getElementById('repair-item').classList.toggle('hidden-item', repair <= 0);
-    document.getElementById('overtime-section').classList.toggle('hidden-item', overtime.total <= 0);
+            const totalCost = fuel + parking + taxi + repair + wash + overtime.total;
+            document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
+        }
 
-    document.getElementById('show-fuel').textContent = `${fuel} AED`;
-    document.getElementById('show-parking').textContent = `${parking} AED`;
-    document.getElementById('show-taxi').textContent = `${taxi} AED`;
-    document.getElementById('show-car-wash').textContent = `${carWash} AED`;
-    document.getElementById('show-repair').textContent = `${repair} AED`;
-    document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
+        function validateInputs() {
+            const startKm = +document.getElementById("start-km").value;
+            const endKm = +document.getElementById("end-km").value;
+            if (endKm <= startKm) {
+                alert("Error: End odometer must be greater than start!");
+                return false;
+            }
 
-    const breakdownDiv = document.getElementById('overtime-breakdown');
-    breakdownDiv.innerHTML = overtime.breakdown.map(item => `
-        <div class="overtime-row">
-            <span>${item.date}</span>
-            <span>${item.type}</span>
-            <span>${item.hours}h × ${item.rate}AED</span>
-            <span>${item.amount}AED</span>
-        </div>
-    `).join('');
+            const fuel = +document.getElementById('fuel').value;
+            const parking = +document.getElementById('parking').value;
+            const taxi = +document.getElementById('taxi').value;
+            const repair = +document.getElementById('repair').value;
+            const wash = +document.getElementById('wash').value;
+            
+            if(fuel < 0 || parking < 0 || taxi < 0 || repair < 0 || wash < 0) {
+                alert("Error: Costs cannot be negative!");
+                return false;
+            }
+            return true;
+        }
 
-    const totalCost = fuel + parking + taxi + carWash + repair + overtime.total;
-    document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
-}
+        function buildDataString() {
+            const date = new Date(document.getElementById('date').value);
+            const overtime = calculateOvertime();
+            
+            return [
+                `driver:${document.getElementById("driver").value}`,
+                `plate:${document.getElementById("plate").value}`,
+                `date:${document.getElementById("date").value}`,
+                `start_time:${document.getElementById("start-time").value}`,
+                `end_time:${document.getElementById("end-time").value}`,
+                `booker:${document.getElementById("name").value}`,
+                `start_km:${document.getElementById("start-km").value}`,
+                `end_km:${document.getElementById("end-km").value}`,
+                `fuel_cost:${document.getElementById("fuel").value}`,
+                `parking_fee:${document.getElementById("parking").value}`,
+                `taxi_fare:${document.getElementById("taxi").value}`,
+                `maintenance:${document.getElementById("repair").value}`,
+                `car_wash:${document.getElementById("wash").value}`,
+                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}`,
+                `total_cost:${(+document.getElementById("fuel").value + 
+                              +document.getElementById("parking").value + 
+                              +document.getElementById("taxi").value + 
+                              +document.getElementById("repair").value + 
+                              +document.getElementById("wash").value + 
+                              overtime.total).toFixed(2)}`
+            ].join("|");
+        }
 
-async function generateAndShare() {
-    if (!validateForm()) return;
+        async function generateAndShare() {
+            if (!validateInputs()) return;
 
-    syncFormData();
+            syncFormData();
 
-    const exportContainer = document.getElementById("export-container");
-    exportContainer.style.display = "block";
-    
-    await new Promise(resolve => setTimeout(resolve, 100));
+            const qrcodeDiv = document.getElementById("qrcode-section");
+            qrcodeDiv.innerHTML = "";
+            
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
+            new QRCode(qrcodeDiv, {
+                text: buildDataString(),
+                width: 150,
+                height: 150,
+                colorDark: "#2c3e50",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
 
-    try {
-        const qrcodeDiv = document.getElementById("qrcode-section");
-        qrcodeDiv.innerHTML = "";
-        new QRCode(qrcodeDiv, {
-            text: buildDataString(),
-            width: 90,
-            height: 90,
-            colorDark: "#2c3e50",
-            correctLevel: QRCode.CorrectLevel.Q
-        });
+            await new Promise(resolve => setTimeout(resolve, 300));
 
-        const canvas = await html2canvas(exportContainer, {
-            scale: 2,
-            useCORS: true,
-            windowWidth: exportContainer.scrollWidth,
-            windowHeight: exportContainer.scrollHeight,
-            logging: true
-        });
+            const exportContainer = document.getElementById("export-container");
+            exportContainer.style.display = "flex";
+            
+            try {
+                const canvas = await html2canvas(exportContainer, {
+                    useCORS: true,
+                    scale: 2
+                });
 
-        const link = document.createElement('a');
-        link.download = `Driving_Record_${Date.now()}.png`;
-        link.href = canvas.toDataURL();
-        link.click();
+                exportContainer.style.display = "none";
 
-    } catch (err) {
-        console.error('生成失败:', err);
-        alert("生成失败，请检查控制台日志");
-    } finally {
-        exportContainer.style.display = "none";
-    }
-}
+                if (generatedImageElement) generatedImageElement.remove();
+                generatedImageElement = document.createElement('img');
+                generatedImageElement.src = canvas.toDataURL();
+                generatedImageElement.id = 'generated-image';
+                document.body.appendChild(generatedImageElement);
 
-function buildDataString() {
-    const overtime = calculateOvertime();
-    return [
-        `driver:${document.getElementById("driver").value}`,
-        `plate:${document.getElementById("plate").value}`,
-        `date:${document.getElementById("date").value}`,
-        `start_time:${document.getElementById("start-time").value}`,
-        `end_time:${document.getElementById("end-time").value}`,
-        `booker:${document.getElementById("name").value}`,
-        `start_km:${document.getElementById("start-km").value}`,
-        `end_km:${document.getElementById("end-km").value}`,
-        `fuel_cost:${document.getElementById("fuel").value || 0}`,
-        `parking_fee:${document.getElementById("parking").value || 0}`,
-        `taxi_fare:${document.getElementById("taxi").value || 0}`,
-        `car_wash:${document.getElementById("car-wash").value || 0}`,
-        `repair_cost:${document.getElementById("repair").value || 0}`,
-        `overtime_details:${JSON.stringify(overtime.breakdown)}`,
-        `total_cost:${(+document.getElementById("fuel").value +
-            +document.getElementById("parking").value +
-            +document.getElementById("taxi").value +
-            +document.getElementById("car-wash").value +
-            +document.getElementById("repair").value +
-            overtime.total).toFixed(2)}`
-    ].join("|");
-}
+                const link = document.createElement('a');
+                link.download = `Driving_Record_${Date.now()}.png`;
+                link.href = generatedImageElement.src;
+                link.click();
+            } catch (err) {
+                alert("Generation failed, please try again");
+                exportContainer.style.display = "none";
+            }
+        }
 
-document.getElementById('start-time').addEventListener('change', syncFormData);
-document.getElementById('end-time').addEventListener('change', syncFormData);
-document.getElementById('date').addEventListener('change', syncFormData);
-document.getElementById('fuel').addEventListener('input', syncFormData);
-document.getElementById('parking').addEventListener('input', syncFormData);
-document.getElementById('taxi').addEventListener('input', syncFormData);
-document.getElementById('car-wash').addEventListener('input', syncFormData);
-document.getElementById('repair').addEventListener('input', syncFormData);
-</script>
+        // Event Listeners
+        document.getElementById('start-time').addEventListener('change', syncFormData);
+        document.getElementById('end-time').addEventListener('change', syncFormData);
+        document.getElementById('date').addEventListener('change', syncFormData);
+        document.getElementById('fuel').addEventListener('input', syncFormData);
+        document.getElementById('parking').addEventListener('input', syncFormData);
+        document.getElementById('taxi').addEventListener('input', syncFormData);
+        document.getElementById('repair').addEventListener('input', syncFormData);
+        document.getElementById('wash').addEventListener('input', syncFormData);
+    </script>
 </body>
 </html>
