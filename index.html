@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <style>
-/* 全局样式 */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -16,7 +15,6 @@ body {
     min-height: 100vh;
 }
 
-/* 表单容器 */
 .form-container {
     max-width: 600px;
     margin: 0 auto;
@@ -32,7 +30,6 @@ body {
     margin-bottom: 10px;
 }
 
-/* 表单区域 */
 .form-section {
     background: white;
     padding: 25px;
@@ -41,7 +38,6 @@ body {
     margin-bottom: 25px;
 }
 
-/* 导出容器 */
 #export-container {
     display: none;
     background: white;
@@ -54,7 +50,6 @@ body {
     position: relative;
 }
 
-/* 头部布局 */
 .export-header {
     display: flex;
     justify-content: space-between;
@@ -69,7 +64,6 @@ body {
     flex-shrink: 0;
 }
 
-/* 网格布局 */
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -91,7 +85,6 @@ body {
     font-size: 14px;
 }
 
-/* 表单元素 */
 .form-group {
     margin-bottom: 18px;
 }
@@ -127,7 +120,6 @@ button:hover {
     transform: translateY(-1px);
 }
 
-/* 响应式设计 */
 @media (max-width: 480px) {
     body {
         padding: 15px;
@@ -249,6 +241,18 @@ button:hover {
             <input type="number" id="taxi" min="0" step="5">
         </div>
 
+        <!-- 新增洗车费 -->
+        <div class="form-group">
+            <label>Car Wash (AED):</label>
+            <input type="number" id="car-wash" min="0" step="5">
+        </div>
+
+        <!-- 新增修车费 -->
+        <div class="form-group">
+            <label>Repair Cost (AED):</label>
+            <input type="number" id="repair" min="0" step="5">
+        </div>
+
         <button onclick="saveDraft()">Save Draft</button>
         <button onclick="generateAndShare()">Generate QR Code</button>
     </div>
@@ -303,6 +307,14 @@ button:hover {
             <span class="summary-label">Taxi Fare:</span>
             <span id="show-taxi"></span>
         </div>
+        <div class="summary-item hidden-item" id="car-wash-item">
+            <span class="summary-label">Car Wash:</span>
+            <span id="show-car-wash"></span>
+        </div>
+        <div class="summary-item hidden-item" id="repair-item">
+            <span class="summary-label">Repair Cost:</span>
+            <span id="show-repair"></span>
+        </div>
         <div class="overtime-details hidden-item" id="overtime-section">
             <div class="summary-item">
                 <span class="summary-label">Overtime:</span>
@@ -320,7 +332,6 @@ button:hover {
 <script>
 let generatedImageElement = null;
 
-// 初始化日期
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.getElementById('date');
     const now = new Date();
@@ -328,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
     dateInput.value = localDate.toISOString().substring(0, 10);
 });
 
-// 车牌手动输入
 document.getElementById('plate').addEventListener('change', function() {
     if (this.value === 'Other') {
         const manualPlate = prompt('Enter license plate:');
@@ -342,7 +352,6 @@ document.getElementById('plate').addEventListener('change', function() {
     }
 });
 
-// 保存草稿
 function saveDraft() {
     const driver = document.getElementById('driver').value;
     if (!driver) {
@@ -361,13 +370,14 @@ function saveDraft() {
         endKm: document.getElementById('end-km').value,
         fuel: document.getElementById('fuel').value,
         parking: document.getElementById('parking').value,
-        taxi: document.getElementById('taxi').value
+        taxi: document.getElementById('taxi').value,
+        carWash: document.getElementById('car-wash').value,
+        repair: document.getElementById('repair').value
     };
     
     localStorage.setItem(`draft_${driver}`, JSON.stringify(formData));
 }
 
-// 加载草稿
 function loadDraft() {
     const driver = document.getElementById('driver').value;
     if (!driver) return;
@@ -385,6 +395,8 @@ function loadDraft() {
         document.getElementById('fuel').value = formData.fuel;
         document.getElementById('parking').value = formData.parking;
         document.getElementById('taxi').value = formData.taxi;
+        document.getElementById('car-wash').value = formData.carWash;
+        document.getElementById('repair').value = formData.repair;
         
         if (formData.plate === 'Other') {
             const manualPlate = prompt('Enter license plate:');
@@ -400,19 +412,16 @@ function loadDraft() {
     }
 }
 
-// 自动加载草稿
 document.getElementById('driver').addEventListener('change', function() {
     loadDraft();
     syncFormData();
 });
 
-// 自动保存
 setInterval(() => {
     const driver = document.getElementById('driver').value;
     if (driver) saveDraft();
 }, 10000);
 
-// 表单验证
 function validateForm() {
     const requiredFields = [
         'driver', 'date', 'plate', 'name',
@@ -438,7 +447,6 @@ function validateForm() {
     return true;
 }
 
-// 计算加班费
 function calculateOvertime() {
     const start = document.getElementById('start-time').value;
     const end = document.getElementById('end-time').value;
@@ -539,7 +547,6 @@ function calculateOvertime() {
     };
 }
 
-// 同步表单数据
 function syncFormData() {
     document.getElementById('show-driver').textContent = document.getElementById('driver').value;
     document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -553,17 +560,22 @@ function syncFormData() {
     const fuel = +document.getElementById('fuel').value || 0;
     const parking = +document.getElementById('parking').value || 0;
     const taxi = +document.getElementById('taxi').value || 0;
+    const carWash = +document.getElementById('car-wash').value || 0;
+    const repair = +document.getElementById('repair').value || 0;
     const overtime = calculateOvertime();
 
-    // 动态显示/隐藏
     document.getElementById('fuel-item').classList.toggle('hidden-item', fuel <= 0);
     document.getElementById('parking-item').classList.toggle('hidden-item', parking <= 0);
     document.getElementById('taxi-item').classList.toggle('hidden-item', taxi <= 0);
+    document.getElementById('car-wash-item').classList.toggle('hidden-item', carWash <= 0);
+    document.getElementById('repair-item').classList.toggle('hidden-item', repair <= 0);
     document.getElementById('overtime-section').classList.toggle('hidden-item', overtime.total <= 0);
 
     document.getElementById('show-fuel').textContent = `${fuel} AED`;
     document.getElementById('show-parking').textContent = `${parking} AED`;
     document.getElementById('show-taxi').textContent = `${taxi} AED`;
+    document.getElementById('show-car-wash').textContent = `${carWash} AED`;
+    document.getElementById('show-repair').textContent = `${repair} AED`;
     document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
 
     const breakdownDiv = document.getElementById('overtime-breakdown');
@@ -576,11 +588,10 @@ function syncFormData() {
         </div>
     `).join('');
 
-    const totalCost = fuel + parking + taxi + overtime.total;
+    const totalCost = fuel + parking + taxi + carWash + repair + overtime.total;
     document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
 }
 
-// 生成二维码和截图
 async function generateAndShare() {
     if (!validateForm()) return;
 
@@ -589,11 +600,9 @@ async function generateAndShare() {
     const exportContainer = document.getElementById("export-container");
     exportContainer.style.display = "block";
     
-    // 等待布局稳定
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-        // 生成二维码
         const qrcodeDiv = document.getElementById("qrcode-section");
         qrcodeDiv.innerHTML = "";
         new QRCode(qrcodeDiv, {
@@ -604,7 +613,6 @@ async function generateAndShare() {
             correctLevel: QRCode.CorrectLevel.Q
         });
 
-        // 生成图片
         const canvas = await html2canvas(exportContainer, {
             scale: 2,
             useCORS: true,
@@ -613,7 +621,6 @@ async function generateAndShare() {
             logging: true
         });
 
-        // 下载图片
         const link = document.createElement('a');
         link.download = `Driving_Record_${Date.now()}.png`;
         link.href = canvas.toDataURL();
@@ -627,7 +634,6 @@ async function generateAndShare() {
     }
 }
 
-// 构建数据字符串
 function buildDataString() {
     const overtime = calculateOvertime();
     return [
@@ -642,21 +648,26 @@ function buildDataString() {
         `fuel_cost:${document.getElementById("fuel").value || 0}`,
         `parking_fee:${document.getElementById("parking").value || 0}`,
         `taxi_fare:${document.getElementById("taxi").value || 0}`,
+        `car_wash:${document.getElementById("car-wash").value || 0}`,
+        `repair_cost:${document.getElementById("repair").value || 0}`,
         `overtime_details:${JSON.stringify(overtime.breakdown)}`,
         `total_cost:${(+document.getElementById("fuel").value +
             +document.getElementById("parking").value +
             +document.getElementById("taxi").value +
+            +document.getElementById("car-wash").value +
+            +document.getElementById("repair").value +
             overtime.total).toFixed(2)}`
     ].join("|");
 }
 
-// 事件监听
 document.getElementById('start-time').addEventListener('change', syncFormData);
 document.getElementById('end-time').addEventListener('change', syncFormData);
 document.getElementById('date').addEventListener('change', syncFormData);
 document.getElementById('fuel').addEventListener('input', syncFormData);
 document.getElementById('parking').addEventListener('input', syncFormData);
 document.getElementById('taxi').addEventListener('input', syncFormData);
+document.getElementById('car-wash').addEventListener('input', syncFormData);
+document.getElementById('repair').addEventListener('input', syncFormData);
 </script>
 </body>
 </html>
