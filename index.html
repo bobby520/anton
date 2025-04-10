@@ -349,7 +349,7 @@
                 
                 breakdown.push({
                     type: segment.isWeekend ? 'Weekend' : 'Weekday',
-                    date: segment.start.toISOString().split('T')[0],
+                    date: `${segment.start.getFullYear()}-${String(segment.start.getMonth()+1).padStart(2,'0')}-${String(segment.start.getDate()).padStart(2,'0')}`,
                     hours: hours.toFixed(2),
                     rate: rate,
                     amount: amount
