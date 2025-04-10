@@ -79,20 +79,23 @@
             font-weight: 600;
             padding: 16px;
             font-size: 17px;
-            border-radius: 12px;
+            border-radius: 10px;
             margin-top: 10px;
             touch-action: manipulation;
         }
 
         #export-container {
-            display: none;
+            position: fixed;
+            left: -9999px;
+            top: 0;
             width: 100%;
             max-width: 500px;
-            margin: 15px auto;
             background: white;
             padding: 20px;
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            opacity: 0;
+            pointer-events: none;
         }
 
         .export-title {
@@ -442,7 +445,6 @@
         });
 
         function syncFormData() {
-            // 基础信息显示
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
             document.getElementById('show-plate').textContent = document.getElementById('plate').value;
@@ -452,14 +454,12 @@
             document.getElementById('show-odo').textContent = 
                 `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
-            // 费用处理
             const fuel = +document.getElementById('fuel').value || 0;
             const parking = +document.getElementById('parking').value || 0;
             const taxi = +document.getElementById('taxi').value || 0;
             const repair = +document.getElementById('repair').value || 0;
             const wash = +document.getElementById('wash').value || 0;
 
-            // 动态隐藏金额为0的项目
             const toggleVisibility = (value, elementId) => {
                 const element = document.getElementById(elementId);
                 if (element) {
@@ -467,7 +467,6 @@
                 }
             };
 
-            // 更新显示并控制可见性
             document.getElementById('show-fuel').textContent = `${fuel} AED`;
             toggleVisibility(fuel, 'show-fuel');
 
@@ -483,12 +482,10 @@
             document.getElementById('show-wash').textContent = `${wash} AED`;
             toggleVisibility(wash, 'show-wash');
 
-            // 加班费处理
             const overtime = calculateOvertime();
             document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
             document.querySelector('.overtime-details').classList.toggle('hidden', overtime.total === 0);
 
-            // 更新加班明细
             const breakdownDiv = document.getElementById('overtime-breakdown');
             breakdownDiv.innerHTML = overtime.breakdown.map(item => `
                 <div class="overtime-row">
@@ -498,7 +495,6 @@
                 </div>
             `).join('');
 
-            // 总费用计算
             const totalCost = fuel + parking + taxi + repair + wash + overtime.total;
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
@@ -556,11 +552,11 @@
 
             syncFormData();
 
+            const exportContainer = document.getElementById("export-container");
             const qrcodeDiv = document.getElementById("qrcode-section");
+            
+            // 生成二维码
             qrcodeDiv.innerHTML = "";
-            
-            await new Promise(resolve => requestAnimationFrame(resolve));
-            
             new QRCode(qrcodeDiv, {
                 text: buildDataString(),
                 width: 150,
@@ -570,33 +566,39 @@
                 correctLevel: QRCode.CorrectLevel.H
             });
 
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            const exportContainer = document.getElementById("export-container");
-            exportContainer.style.display = "flex";
+            // 等待渲染完成
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             try {
+                // 临时显示容器
+                exportContainer.style.left = "50%";
+                exportContainer.style.transform = "translateX(-50%)";
+                exportContainer.style.opacity = "1";
+                
                 const canvas = await html2canvas(exportContainer, {
                     useCORS: true,
-                    scale: 2,
-                    logging: false
+                    scale: window.devicePixelRatio || 2,
+                    logging: false,
+                    allowTaint: true,
+                    backgroundColor: null
                 });
 
-                exportContainer.style.display = "none";
-
-                if (generatedImageElement) generatedImageElement.remove();
-                generatedImageElement = document.createElement('img');
-                generatedImageElement.src = canvas.toDataURL();
-                generatedImageElement.id = 'generated-image';
-                document.body.appendChild(generatedImageElement);
-
+                // 生成下载链接
                 const link = document.createElement('a');
                 link.download = `Driving_Record_${Date.now()}.png`;
-                link.href = generatedImageElement.src;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
+
             } catch (err) {
-                alert("Generation failed, please try again");
-                exportContainer.style.display = "none";
+                console.error('生成失败:', err);
+                alert("生成失败，请检查控制台日志");
+            } finally {
+                // 恢复隐藏状态
+                exportContainer.style.left = "-9999px";
+                exportContainer.style.transform = "none";
+                exportContainer.style.opacity = "0";
             }
         }
 
