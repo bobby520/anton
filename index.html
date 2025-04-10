@@ -2,124 +2,197 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Anton Oilfield Services DMCC - Driving Record</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            max-width: 800px; 
-            margin: 20px auto; 
-            padding: 20px; 
-            background-color: #f5f5f5;
+        /* 移动端优化样式 */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
         .header {
             text-align: center;
-            margin-bottom: 20px;
+            padding: 15px 0;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
+
         .company-logo {
-            height: 30px;
-            margin-bottom: 8px;
+            height: 40px;
+            margin-bottom: 10px;
         }
+
         .form-section {
             background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            margin: 15px 0;
         }
+
         .form-group { 
-            margin-bottom: 12px; 
+            margin-bottom: 15px;
         }
+
         label { 
-            display: block; 
-            margin-bottom: 4px; 
-            font-weight: bold; 
-            color: #444;
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #2c3e50;
+            font-size: 0.95em;
         }
-        input, select, button { 
-            width: 100%; 
-            padding: 8px; 
-            margin-bottom: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 3px; 
-            box-sizing: border-box;
+
+        input, select, button {
+            width: 100%;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
         }
+
+        input:focus, select:focus {
+            border-color: #1AAD19;
+            outline: none;
+            box-shadow: 0 0 8px rgba(26,173,25,0.2);
+        }
+
         button { 
             background-color: #1AAD19;
-            color: white; 
-            border: none; 
-            cursor: pointer; 
-            padding: 10px 0;
+            color: white;
+            font-weight: 600;
+            padding: 16px;
+            font-size: 17px;
+            border-radius: 12px;
+            margin-top: 10px;
+            touch-action: manipulation;
         }
+
         #export-container {
             display: none;
-            width: 360px;
+            width: 100%;
+            max-width: 500px;
             margin: 15px auto;
             background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            flex-direction: column;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
-        .export-logo {
-            height: 30px;
-            margin: 0 auto 10px;
-            display: block;
-        }
+
         .export-title {
-            text-align: center;
-            font-size: 1em;
+            font-size: 1.2em;
             color: #2c3e50;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-        }
-        #qrcode-section {
+            margin-bottom: 20px;
+            font-weight: 600;
             text-align: center;
-            margin-top: 15px;
-            padding: 10px;
         }
-        #qrcode-section canvas {
-            width: 150px !important;
-            height: 150px !important;
-        }
+
         .summary-item {
-            margin: 8px 0;
-            padding: 8px;
+            margin: 12px 0;
+            padding: 14px;
             background: #f8f9fa;
-            border-radius: 5px;
-            font-size: 0.9em;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
+
         .summary-label {
             color: #666;
-            font-weight: bold;
-            display: inline-block;
-            width: 100px;
+            font-weight: 500;
+            flex: 1 1 120px;
+            margin-right: 15px;
         }
+
+        #qrcode-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        #qrcode-section canvas {
+            width: 140px !important;
+            height: 140px !important;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+                font-size: 15px;
+            }
+
+            .header h2 {
+                font-size: 1.3em;
+                padding: 0 10px;
+            }
+
+            input, select, button {
+                padding: 12px 14px;
+                font-size: 15px;
+            }
+
+            button {
+                padding: 14px;
+                font-size: 16px;
+            }
+
+            .summary-item {
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .summary-label {
+                margin-bottom: 6px;
+                width: 100%;
+            }
+
+            #qrcode-section canvas {
+                width: 120px !important;
+                height: 120px !important;
+            }
+        }
+
         .total-cost {
             background: #e3f2fd !important;
-            font-weight: bold;
-            border: 1px solid #bbdefb;
+            border: 2px solid #bbdefb;
+            font-weight: 600;
         }
+
         .overtime-details {
             background: #fff3e0;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
         }
+
         .overtime-row {
             display: flex;
             justify-content: space-between;
-            margin: 5px 0;
+            margin: 8px 0;
+            width: 100%;
         }
-        @media (max-width: 480px) {
-            .form-group input {
+
+        @media (max-width: 360px) {
+            input, select {
                 font-size: 14px;
-            }
-            .summary-label {
-                width: 90px;
             }
         }
     </style>
@@ -286,7 +359,7 @@
     <script>
         let generatedImageElement = null;
 
-        // ========== 核心修复部分 ==========
+        // 日期时间处理核心函数
         function parseLocalDateTime(dateStr, timeStr) {
             const [year, month, day] = dateStr.split('-').map(Number);
             const [hours, minutes] = timeStr.split(':').map(Number);
@@ -350,9 +423,8 @@
                 breakdown: breakdown 
             };
         }
-        // ========== 核心修复结束 ==========
 
-        // 其他功能保持不变
+        // 初始化日期
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -360,6 +432,7 @@
             dateInput.value = localDate.toISOString().substring(0, 10);
         });
 
+        // 车牌手动输入
         document.getElementById('plate').addEventListener('change', function() {
             if (this.value === 'Other') {
                 const manualPlate = prompt('Enter license plate:');
@@ -373,6 +446,7 @@
             }
         });
 
+        // 同步表单数据
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -411,6 +485,7 @@
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
+        // 输入验证
         function validateInputs() {
             const startKm = +document.getElementById("start-km").value;
             const endKm = +document.getElementById("end-km").value;
@@ -432,6 +507,7 @@
             return true;
         }
 
+        // 生成数据字符串
         function buildDataString() {
             const overtime = calculateOvertime();
             
@@ -459,6 +535,7 @@
             ].join("|");
         }
 
+        // 生成和分享功能
         async function generateAndShare() {
             if (!validateInputs()) return;
 
@@ -486,7 +563,8 @@
             try {
                 const canvas = await html2canvas(exportContainer, {
                     useCORS: true,
-                    scale: 2
+                    scale: 2,
+                    logging: false
                 });
 
                 exportContainer.style.display = "none";
@@ -507,7 +585,7 @@
             }
         }
 
-        // Event Listeners
+        // 事件监听
         document.getElementById('start-time').addEventListener('change', syncFormData);
         document.getElementById('end-time').addEventListener('change', syncFormData);
         document.getElementById('date').addEventListener('change', syncFormData);
