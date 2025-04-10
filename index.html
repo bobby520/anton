@@ -286,6 +286,73 @@
     <script>
         let generatedImageElement = null;
 
+        // ========== 核心修复部分 ==========
+        function parseLocalDateTime(dateStr, timeStr) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return new Date(year, month-1, day, hours, minutes);
+        }
+
+        function splitTimeSegments(start, end) {
+            const segments = [];
+            let current = new Date(start);
+            
+            while (current < end) {
+                const nextMidnight = new Date(current);
+                nextMidnight.setDate(current.getDate() + 1);
+                nextMidnight.setHours(0, 0, 0, 0);
+                
+                const segmentEnd = new Date(Math.min(end, nextMidnight));
+                segments.push({
+                    start: new Date(current),
+                    end: segmentEnd,
+                    isWeekend: [0, 6].includes(current.getDay())
+                });
+                
+                current = segmentEnd;
+            }
+            return segments;
+        }
+
+        function calculateOvertime() {
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const dateStr = document.getElementById('date').value;
+
+            if (!startTime || !endTime || !dateStr) return { total: 0, breakdown: [] };
+
+            const start = parseLocalDateTime(dateStr, startTime);
+            let end = parseLocalDateTime(dateStr, endTime);
+            if (end <= start) end.setDate(end.getDate() + 1);
+
+            const segments = splitTimeSegments(start, end);
+            let totalOvertime = 0;
+            const breakdown = [];
+
+            segments.forEach(segment => {
+                const hours = (segment.end - segment.start) / 3600000;
+                const rate = segment.isWeekend ? 25 : 20;
+                const amount = Math.round(hours * rate * 100) / 100;
+                
+                breakdown.push({
+                    type: segment.isWeekend ? 'Weekend' : 'Weekday',
+                    date: `${segment.start.getFullYear()}-${(segment.start.getMonth()+1).toString().padStart(2,'0')}-${segment.start.getDate().toString().padStart(2,'0')}`,
+                    hours: hours.toFixed(2),
+                    rate: rate,
+                    amount: amount
+                });
+                
+                totalOvertime += amount;
+            });
+
+            return { 
+                total: Math.round(totalOvertime * 100) / 100, 
+                breakdown: breakdown 
+            };
+        }
+        // ========== 核心修复结束 ==========
+
+        // 其他功能保持不变
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -305,64 +372,6 @@
                 }
             }
         });
-
-        function splitTimeSegments(start, end) {
-            const segments = [];
-            let current = new Date(start);
-            
-            while (current < end) {
-                const nextDay = new Date(current);
-                nextDay.setDate(current.getDate() + 1);
-                nextDay.setHours(0, 0, 0, 0);
-                
-                const segmentEnd = new Date(Math.min(end, nextDay));
-                segments.push({
-                    start: new Date(current),
-                    end: new Date(segmentEnd),
-                    isWeekend: [0, 6].includes(current.getDay())
-                });
-                
-                current = segmentEnd;
-            }
-            return segments;
-        }
-
-        function calculateOvertime() {
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
-            const dateStr = document.getElementById('date').value;
-
-            if (!startTime || !endTime || !dateStr) return { total: 0, breakdown: [] };
-
-            const start = new Date(`${dateStr}T${startTime}`);
-            let end = new Date(`${dateStr}T${endTime}`);
-            if (end < start) end.setDate(end.getDate() + 1);
-
-            const segments = splitTimeSegments(start, end);
-            let totalOvertime = 0;
-            const breakdown = [];
-
-            segments.forEach(segment => {
-                const hours = (segment.end - segment.start) / 3600000;
-                const rate = segment.isWeekend ? 25 : 20;
-                const amount = Math.round(hours * rate * 100) / 100;
-                
-                breakdown.push({
-                    type: segment.isWeekend ? 'Weekend' : 'Weekday',
-                    date: `${segment.start.getFullYear()}-${String(segment.start.getMonth()+1).padStart(2,'0')}-${String(segment.start.getDate()).padStart(2,'0')}`,
-                    hours: hours.toFixed(2),
-                    rate: rate,
-                    amount: amount
-                });
-                
-                totalOvertime += amount;
-            });
-
-            return { 
-                total: Math.round(totalOvertime * 100) / 100, 
-                breakdown: breakdown 
-            };
-        }
 
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
@@ -424,7 +433,6 @@
         }
 
         function buildDataString() {
-            const date = new Date(document.getElementById('date').value);
             const overtime = calculateOvertime();
             
             return [
