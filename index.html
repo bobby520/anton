@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        /* 移动端优化样式 */
         * {
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
@@ -132,6 +131,30 @@
             height: 140px !important;
         }
 
+        .total-cost {
+            background: #e3f2fd !important;
+            border: 2px solid #bbdefb;
+            font-weight: 600;
+        }
+
+        .overtime-details {
+            background: #fff3e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+
+        .overtime-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            width: 100%;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
         @media (max-width: 480px) {
             body {
                 padding: 10px;
@@ -167,32 +190,6 @@
             #qrcode-section canvas {
                 width: 120px !important;
                 height: 120px !important;
-            }
-        }
-
-        .total-cost {
-            background: #e3f2fd !important;
-            border: 2px solid #bbdefb;
-            font-weight: 600;
-        }
-
-        .overtime-details {
-            background: #fff3e0;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-        }
-
-        .overtime-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-            width: 100%;
-        }
-
-        @media (max-width: 360px) {
-            input, select {
-                font-size: 14px;
             }
         }
     </style>
@@ -424,7 +421,6 @@
             };
         }
 
-        // 初始化日期
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -432,7 +428,6 @@
             dateInput.value = localDate.toISOString().substring(0, 10);
         });
 
-        // 车牌手动输入
         document.getElementById('plate').addEventListener('change', function() {
             if (this.value === 'Other') {
                 const manualPlate = prompt('Enter license plate:');
@@ -446,8 +441,8 @@
             }
         });
 
-        // 同步表单数据
         function syncFormData() {
+            // 基础信息显示
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
             document.getElementById('show-plate').textContent = document.getElementById('plate').value;
@@ -457,21 +452,43 @@
             document.getElementById('show-odo').textContent = 
                 `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
+            // 费用处理
             const fuel = +document.getElementById('fuel').value || 0;
             const parking = +document.getElementById('parking').value || 0;
             const taxi = +document.getElementById('taxi').value || 0;
             const repair = +document.getElementById('repair').value || 0;
             const wash = +document.getElementById('wash').value || 0;
-            
-            document.getElementById('show-fuel').textContent = `${fuel} AED`;
-            document.getElementById('show-parking').textContent = `${parking} AED`;
-            document.getElementById('show-taxi').textContent = `${taxi} AED`;
-            document.getElementById('show-repair').textContent = `${repair} AED`;
-            document.getElementById('show-wash').textContent = `${wash} AED`;
 
+            // 动态隐藏金额为0的项目
+            const toggleVisibility = (value, elementId) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.closest('.summary-item').classList.toggle('hidden', value === 0);
+                }
+            };
+
+            // 更新显示并控制可见性
+            document.getElementById('show-fuel').textContent = `${fuel} AED`;
+            toggleVisibility(fuel, 'show-fuel');
+
+            document.getElementById('show-parking').textContent = `${parking} AED`;
+            toggleVisibility(parking, 'show-parking');
+
+            document.getElementById('show-taxi').textContent = `${taxi} AED`;
+            toggleVisibility(taxi, 'show-taxi');
+
+            document.getElementById('show-repair').textContent = `${repair} AED`;
+            toggleVisibility(repair, 'show-repair');
+
+            document.getElementById('show-wash').textContent = `${wash} AED`;
+            toggleVisibility(wash, 'show-wash');
+
+            // 加班费处理
             const overtime = calculateOvertime();
             document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
-            
+            document.querySelector('.overtime-details').classList.toggle('hidden', overtime.total === 0);
+
+            // 更新加班明细
             const breakdownDiv = document.getElementById('overtime-breakdown');
             breakdownDiv.innerHTML = overtime.breakdown.map(item => `
                 <div class="overtime-row">
@@ -481,11 +498,11 @@
                 </div>
             `).join('');
 
+            // 总费用计算
             const totalCost = fuel + parking + taxi + repair + wash + overtime.total;
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
-        // 输入验证
         function validateInputs() {
             const startKm = +document.getElementById("start-km").value;
             const endKm = +document.getElementById("end-km").value;
@@ -507,7 +524,6 @@
             return true;
         }
 
-        // 生成数据字符串
         function buildDataString() {
             const overtime = calculateOvertime();
             
@@ -535,7 +551,6 @@
             ].join("|");
         }
 
-        // 生成和分享功能
         async function generateAndShare() {
             if (!validateInputs()) return;
 
