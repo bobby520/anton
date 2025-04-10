@@ -56,14 +56,14 @@ button {
 }
 #export-container {
     display: none;
-    width: 100%;
-    max-width: 300px;
+    width: 320px;
     margin: 10px auto;
     background: white;
-    padding: 10px;
+    padding: 15px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    font-size: 13px;
+    font-size: 14px;
+    line-height: 1.5;
 }
 .export-logo {
     height: 25px;
@@ -71,31 +71,30 @@ button {
 }
 .export-title {
     text-align: center;
-    font-size: 14px;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #eee;
+    font-size: 16px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #eee;
 }
 #qrcode-section {
     text-align: center;
-    margin: 8px 0;
+    margin: 10px 0;
 }
 #qrcode-section canvas {
-    width: 90px !important;
-    height: 90px !important;
+    width: 100px !important;
+    height: 100px !important;
 }
 .summary-item {
-    margin: 5px 0;
-    padding: 6px;
+    margin: 8px 0;
+    padding: 8px 10px;
     background: #f8f9fa;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 .summary-label {
-    color: #666;
-    font-weight: bold;
+    color: #2c3e50;
+    font-weight: 600;
     display: inline-block;
-    width: 80px;
-    font-size: 13px;
+    width: 100px;
 }
 .total-cost {
     background: #e3f2fd !important;
@@ -121,9 +120,13 @@ button[onclick="saveDraft()"] {
 .hidden-item {
     display: none !important;
 }
-@media (max-width: 350px) {
+@media (max-width: 375px) {
+    #export-container {
+        width: 95%;
+        padding: 10px;
+    }
     .summary-label {
-        width: 70px;
+        width: 90px;
     }
 }
 </style>
@@ -530,46 +533,44 @@ async function generateAndShare() {
     syncFormData();
 
     const exportContainer = document.getElementById("export-container");
-    exportContainer.style.display = "flex";
+    exportContainer.style.display = "block";
     
-    // 等待布局更新
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // 等待布局渲染完成
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
+        // 生成二维码
         const qrcodeDiv = document.getElementById("qrcode-section");
         qrcodeDiv.innerHTML = "";
         new QRCode(qrcodeDiv, {
             text: buildDataString(),
-            width: 90,
-            height: 90,
+            width: 100,
+            height: 100,
             colorDark: "#2c3e50",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.M
+            correctLevel: QRCode.CorrectLevel.Q
         });
 
+        // 生成图片
         const canvas = await html2canvas(exportContainer, {
+            scale: 2,
             useCORS: true,
-            scale: 1.5,
-            windowWidth: 300,
-            windowHeight: exportContainer.scrollHeight
+            windowWidth: 320,
+            windowHeight: exportContainer.scrollHeight + 50
         });
 
-        if (generatedImageElement) generatedImageElement.remove();
-        generatedImageElement = document.createElement('img');
-        generatedImageElement.src = canvas.toDataURL();
-        generatedImageElement.id = 'generated-image';
-        document.body.appendChild(generatedImageElement);
-
+        // 下载图片
         const link = document.createElement('a');
         link.download = `Driving_Record_${Date.now()}.png`;
-        link.href = generatedImageElement.src;
+        link.href = canvas.toDataURL();
         link.click();
 
-        const driver = document.getElementById('driver').value;
-        localStorage.removeItem(`draft_${driver}`);
+        // 清除临时显示
+        exportContainer.style.display = "none";
+        localStorage.removeItem(`draft_${document.getElementById('driver').value}`);
+
     } catch (err) {
-        alert("Generation failed, please try again");
-    } finally {
+        console.error('生成失败:', err);
+        alert("生成失败，请检查网络连接后重试");
         exportContainer.style.display = "none";
     }
 }
