@@ -359,6 +359,30 @@
                     rate: rate,
                     amount: +(hours * rate).toFixed(2)
                 });
+                 // 判断每一天是否周末
+    let currentDate = new Date(startDateTime);
+    while (currentDate < endDateTime) {
+        const isCurrentDayWeekend = [0, 6].includes(currentDate.getDay());
+        const dayStart = new Date(currentDate);
+        const dayEnd = new Date(currentDate);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        if (isCurrentDayWeekend) {
+            // 全天按周末计算
+            const hours = calculateHours(
+                Math.max(dayStart, startDateTime),
+                Math.min(dayEnd, endDateTime)
+            );
+            overtime.total += hours * 25;
+            // ...记录明细...
+        } else {
+            // 平日早晚分段计算
+            // ...原有逻辑...
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+        currentDate.setHours(0, 0, 0, 0);
+    }
+}
             } else {
                 const endEarly = new Date(startDateTime);
                 endEarly.setHours(NORMAL_START, 0, 0, 0);
