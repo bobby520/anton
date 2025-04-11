@@ -2,197 +2,132 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anton Oilfield Services DMCC - Driving Record</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-        }
-
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            margin: 0;
-            padding: 15px;
-            background-color: #f8f9fa;
-            font-size: 16px;
-            line-height: 1.5;
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background-color: #f5f5f5;
         }
-
         .header {
             text-align: center;
-            padding: 15px 0;
-            background: white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 10;
+            margin-bottom: 20px;
         }
-
         .company-logo {
-            height: 40px;
-            margin-bottom: 10px;
+            height: 30px;
+            margin-bottom: 8px;
         }
-
         .form-section {
             background: white;
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            margin: 15px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
-
         .form-group { 
-            margin-bottom: 15px;
+            margin-bottom: 12px; 
         }
-
         label { 
-            display: block;
-            margin-bottom: 6px;
-            font-weight: 500;
-            color: #2c3e50;
-            font-size: 0.95em;
+            display: block; 
+            margin-bottom: 4px; 
+            font-weight: bold; 
+            color: #444;
         }
-
-        input, select, button {
-            width: 100%;
-            padding: 14px 16px;
-            margin-bottom: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            -webkit-appearance: none;
+        input, select, button { 
+            width: 100%; 
+            padding: 8px; 
+            margin-bottom: 12px; 
+            border: 1px solid #ddd; 
+            border-radius: 3px; 
+            box-sizing: border-box;
         }
-
-        input:focus, select:focus {
-            border-color: #1AAD19;
-            outline: none;
-            box-shadow: 0 0 8px rgba(26,173,25,0.2);
-        }
-
         button { 
             background-color: #1AAD19;
-            color: white;
-            font-weight: 600;
-            padding: 16px;
-            font-size: 17px;
-            border-radius: 10px;
-            margin-top: 10px;
-            touch-action: manipulation;
+            color: white; 
+            border: none; 
+            cursor: pointer; 
+            padding: 10px 0;
         }
-
         #export-container {
-            position: fixed;
-            left: -9999px;
-            top: 0;
-            width: 100%;
-            max-width: 500px;
+            display: none;
+            width: 360px;
+            margin: 15px auto;
             background: white;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-            opacity: 0;
-            pointer-events: none;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            flex-direction: column;
         }
-
+        .export-logo {
+            height: 30px;
+            margin: 0 auto 10px;
+            display: block;
+        }
         .export-title {
-            font-size: 1.2em;
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-weight: 600;
             text-align: center;
+            font-size: 1em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
         }
-
-        .summary-item {
-            margin: 12px 0;
-            padding: 14px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .summary-label {
-            color: #666;
-            font-weight: 500;
-            flex: 1 1 120px;
-            margin-right: 15px;
-        }
-
         #qrcode-section {
             text-align: center;
-            margin: 20px 0;
+            margin-top: 15px;
+            padding: 10px;
         }
-
         #qrcode-section canvas {
-            width: 140px !important;
-            height: 140px !important;
+            width: 150px !important;
+            height: 150px !important;
         }
-
+        #generated-image {
+            max-width: 360px;
+            margin: 20px auto;
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .summary-item {
+            margin: 8px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+        .summary-label {
+            color: #666;
+            font-weight: bold;
+            display: inline-block;
+            width: 100px;
+        }
         .total-cost {
             background: #e3f2fd !important;
-            border: 2px solid #bbdefb;
-            font-weight: 600;
+            font-weight: bold;
+            border: 1px solid #bbdefb;
         }
-
         .overtime-details {
             background: #fff3e0;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
         }
-
         .overtime-row {
             display: flex;
             justify-content: space-between;
-            margin: 8px 0;
-            width: 100%;
+            margin: 5px 0;
         }
-
-        .hidden {
-            display: none !important;
-        }
-
         @media (max-width: 480px) {
-            body {
-                padding: 10px;
-                font-size: 15px;
+            .form-group input {
+                font-size: 14px;
             }
-
-            .header h2 {
-                font-size: 1.3em;
-                padding: 0 10px;
-            }
-
-            input, select, button {
-                padding: 12px 14px;
-                font-size: 15px;
-            }
-
-            button {
-                padding: 14px;
-                font-size: 16px;
-            }
-
-            .summary-item {
-                padding: 12px;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
             .summary-label {
-                margin-bottom: 6px;
-                width: 100%;
-            }
-
-            #qrcode-section canvas {
-                width: 120px !important;
-                height: 120px !important;
+                width: 90px;
             }
         }
     </style>
@@ -258,6 +193,7 @@
             <input type="number" id="end-km" placeholder="e.g., 49348" min="0" required>
         </div>
 
+        <!-- 费用输入顺序调整 -->
         <div class="form-group">
             <label>Fuel Cost (AED):</label>
             <input type="number" id="fuel" min="0" step="5" required>
@@ -268,19 +204,20 @@
             <input type="number" id="parking" min="0" step="5" required>
         </div>
 
+        <!-- 新增洗车费和维修费 -->
+        <div class="form-group">
+            <label>Car Wash Fee (AED):</label>
+            <input type="number" id="car-wash" min="0" step="5" required>
+        </div>
+
+        <div class="form-group">
+            <label>Maintenance Fee (AED):</label>
+            <input type="number" id="maintenance" min="0" step="5" required>
+        </div>
+
         <div class="form-group">
             <label>Taxi Fare (AED):</label>
             <input type="number" id="taxi" min="0" step="5" required>
-        </div>
-
-        <div class="form-group">
-            <label>Vehicle Maintenance (AED):</label>
-            <input type="number" id="repair" min="0" step="5" value="0" required>
-        </div>
-
-        <div class="form-group">
-            <label>Car Wash (AED):</label>
-            <input type="number" id="wash" min="0" step="5" value="0" required>
         </div>
 
         <button onclick="generateAndShare()">Generate QR Code</button>
@@ -321,6 +258,8 @@
                 <span class="summary-label">Odometer:</span>
                 <span id="show-odo"></span>
             </div>
+
+            <!-- 费用显示顺序调整 -->
             <div class="summary-item">
                 <span class="summary-label">Fuel Cost:</span>
                 <span id="show-fuel"></span>
@@ -330,17 +269,18 @@
                 <span id="show-parking"></span>
             </div>
             <div class="summary-item">
-                <span class="summary-label">Taxi Fare:</span>
-                <span id="show-taxi"></span>
+                <span class="summary-label">Car Wash:</span>
+                <span id="show-carwash"></span>
             </div>
             <div class="summary-item">
                 <span class="summary-label">Maintenance:</span>
-                <span id="show-repair"></span>
+                <span id="show-maintenance"></span>
             </div>
             <div class="summary-item">
-                <span class="summary-label">Car Wash:</span>
-                <span id="show-wash"></span>
+                <span class="summary-label">Taxi Fare:</span>
+                <span id="show-taxi"></span>
             </div>
+
             <div class="overtime-details">
                 <div class="summary-item">
                     <span class="summary-label">Overtime:</span>
@@ -359,71 +299,7 @@
     <script>
         let generatedImageElement = null;
 
-        // 日期时间处理核心函数
-        function parseLocalDateTime(dateStr, timeStr) {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            return new Date(year, month-1, day, hours, minutes);
-        }
-
-        function splitTimeSegments(start, end) {
-            const segments = [];
-            let current = new Date(start);
-            
-            while (current < end) {
-                const nextMidnight = new Date(current);
-                nextMidnight.setDate(current.getDate() + 1);
-                nextMidnight.setHours(0, 0, 0, 0);
-                
-                const segmentEnd = new Date(Math.min(end, nextMidnight));
-                segments.push({
-                    start: new Date(current),
-                    end: segmentEnd,
-                    isWeekend: [0, 6].includes(current.getDay())
-                });
-                
-                current = segmentEnd;
-            }
-            return segments;
-        }
-
-        function calculateOvertime() {
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
-            const dateStr = document.getElementById('date').value;
-
-            if (!startTime || !endTime || !dateStr) return { total: 0, breakdown: [] };
-
-            const start = parseLocalDateTime(dateStr, startTime);
-            let end = parseLocalDateTime(dateStr, endTime);
-            if (end <= start) end.setDate(end.getDate() + 1);
-
-            const segments = splitTimeSegments(start, end);
-            let totalOvertime = 0;
-            const breakdown = [];
-
-            segments.forEach(segment => {
-                const hours = (segment.end - segment.start) / 3600000;
-                const rate = segment.isWeekend ? 25 : 20;
-                const amount = Math.round(hours * rate * 100) / 100;
-                
-                breakdown.push({
-                    type: segment.isWeekend ? 'Weekend' : 'Weekday',
-                    date: `${segment.start.getFullYear()}-${(segment.start.getMonth()+1).toString().padStart(2,'0')}-${segment.start.getDate().toString().padStart(2,'0')}`,
-                    hours: hours.toFixed(2),
-                    rate: rate,
-                    amount: amount
-                });
-                
-                totalOvertime += amount;
-            });
-
-            return { 
-                total: Math.round(totalOvertime * 100) / 100, 
-                breakdown: breakdown 
-            };
-        }
-
+        // 初始化日期
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -431,6 +307,7 @@
             dateInput.value = localDate.toISOString().substring(0, 10);
         });
 
+        // 车牌手动输入
         document.getElementById('plate').addEventListener('change', function() {
             if (this.value === 'Other') {
                 const manualPlate = prompt('Enter license plate:');
@@ -444,6 +321,82 @@
             }
         });
 
+        // 加班计算函数
+        function calculateOvertime() {
+            const start = document.getElementById('start-time').value;
+            const end = document.getElementById('end-time').value;
+            const dateInput = document.getElementById('date').value;
+            
+            if (!start || !end || !dateInput) return { total: 0, breakdown: [] };
+
+            const date = new Date(dateInput);
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const dateStr = `${yyyy}-${mm}-${dd}`;
+
+            const startDateTime = new Date(`${dateStr}T${start}`);
+            let endDateTime = new Date(`${dateStr}T${end}`);
+            
+            if (endDateTime < startDateTime) endDateTime.setDate(endDateTime.getDate() + 1);
+
+            const calculateHours = (start, end) => {
+                return Number(((end - start) / 3600000).toFixed(2));
+            };
+
+            const isWeekend = [0, 6].includes(date.getDay());
+            const NORMAL_START = 8;
+            const NORMAL_END = 17;
+            let overtime = { total: 0, breakdown: [] };
+
+            if (isWeekend) {
+                const hours = calculateHours(startDateTime, endDateTime);
+                const rate = 25;
+                overtime.total = hours * rate;
+                overtime.breakdown.push({
+                    type: 'Weekend Overtime',
+                    hours: hours.toFixed(2),
+                    rate: rate,
+                    amount: +(hours * rate).toFixed(2)
+                });
+            } else {
+                const endEarly = new Date(startDateTime);
+                endEarly.setHours(NORMAL_START, 0, 0, 0);
+                const earlyEnd = endDateTime < endEarly ? endDateTime : endEarly;
+                if (startDateTime < earlyEnd) {
+                    const hours = calculateHours(startDateTime, earlyEnd);
+                    if (hours > 0) {
+                        overtime.breakdown.push({
+                            type: 'Early Overtime',
+                            hours: hours.toFixed(2),
+                            rate: 20,
+                            amount: +(hours * 20).toFixed(2)
+                        });
+                    }
+                }
+
+                const startLate = new Date(startDateTime);
+                startLate.setHours(NORMAL_END, 0, 0, 0);
+                const lateStart = startDateTime > startLate ? startDateTime : startLate;
+                if (endDateTime > lateStart) {
+                    const hours = calculateHours(lateStart, endDateTime);
+                    if (hours > 0) {
+                        overtime.breakdown.push({
+                            type: 'Late Overtime',
+                            hours: hours.toFixed(2),
+                            rate: 20,
+                            amount: +(hours * 20).toFixed(2)
+                        });
+                    }
+                }
+
+                overtime.total = +overtime.breakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2);
+            }
+
+            return overtime;
+        }
+
+        // 同步表单数据
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -454,74 +407,107 @@
             document.getElementById('show-odo').textContent = 
                 `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
+            // 获取所有费用值
             const fuel = +document.getElementById('fuel').value || 0;
             const parking = +document.getElementById('parking').value || 0;
+            const carWash = +document.getElementById('car-wash').value || 0;
+            const maintenance = +document.getElementById('maintenance').value || 0;
             const taxi = +document.getElementById('taxi').value || 0;
-            const repair = +document.getElementById('repair').value || 0;
-            const wash = +document.getElementById('wash').value || 0;
 
-            const toggleVisibility = (value, elementId) => {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.closest('.summary-item').classList.toggle('hidden', value === 0);
-                }
-            };
-
+            // 显示费用
             document.getElementById('show-fuel').textContent = `${fuel} AED`;
-            toggleVisibility(fuel, 'show-fuel');
-
             document.getElementById('show-parking').textContent = `${parking} AED`;
-            toggleVisibility(parking, 'show-parking');
-
+            document.getElementById('show-carwash').textContent = `${carWash} AED`;
+            document.getElementById('show-maintenance').textContent = `${maintenance} AED`;
             document.getElementById('show-taxi').textContent = `${taxi} AED`;
-            toggleVisibility(taxi, 'show-taxi');
 
-            document.getElementById('show-repair').textContent = `${repair} AED`;
-            toggleVisibility(repair, 'show-repair');
-
-            document.getElementById('show-wash').textContent = `${wash} AED`;
-            toggleVisibility(wash, 'show-wash');
-
+            // 计算加班费
             const overtime = calculateOvertime();
             document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
-            document.querySelector('.overtime-details').classList.toggle('hidden', overtime.total === 0);
-
+            
+            // 显示加班明细
             const breakdownDiv = document.getElementById('overtime-breakdown');
             breakdownDiv.innerHTML = overtime.breakdown.map(item => `
                 <div class="overtime-row">
-                    <span>${item.date} (${item.type})</span>
+                    <span>${item.type}</span>
                     <span>${item.hours}h × ${item.rate}AED</span>
                     <span>${item.amount}AED</span>
                 </div>
             `).join('');
 
-            const totalCost = fuel + parking + taxi + repair + wash + overtime.total;
+            // 计算总费用
+            const totalCost = fuel + parking + carWash + maintenance + taxi + overtime.total;
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
-        function validateInputs() {
+        // 生成二维码和截图
+        async function generateAndShare() {
             const startKm = +document.getElementById("start-km").value;
             const endKm = +document.getElementById("end-km").value;
             if (endKm <= startKm) {
                 alert("Error: End odometer must be greater than start!");
-                return false;
+                return;
             }
 
             const fuel = +document.getElementById('fuel').value;
             const parking = +document.getElementById('parking').value;
+            const carWash = +document.getElementById('car-wash').value;
+            const maintenance = +document.getElementById('maintenance').value;
             const taxi = +document.getElementById('taxi').value;
-            const repair = +document.getElementById('repair').value;
-            const wash = +document.getElementById('wash').value;
-            
-            if(fuel < 0 || parking < 0 || taxi < 0 || repair < 0 || wash < 0) {
+            if(fuel < 0 || parking < 0 || carWash < 0 || maintenance < 0 || taxi < 0) {
                 alert("Error: Costs cannot be negative!");
-                return false;
+                return;
             }
-            return true;
+
+            syncFormData();
+
+            const qrcodeDiv = document.getElementById("qrcode-section");
+            qrcodeDiv.innerHTML = "";
+            
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
+            new QRCode(qrcodeDiv, {
+                text: buildDataString(),
+                width: 150,
+                height: 150,
+                colorDark: "#2c3e50",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            const exportContainer = document.getElementById("export-container");
+            exportContainer.style.display = "flex";
+            
+            try {
+                const canvas = await html2canvas(exportContainer, {
+                    useCORS: true,
+                    scale: 2
+                });
+
+                exportContainer.style.display = "none";
+
+                if (generatedImageElement) generatedImageElement.remove();
+                generatedImageElement = document.createElement('img');
+                generatedImageElement.src = canvas.toDataURL();
+                generatedImageElement.id = 'generated-image';
+                document.body.appendChild(generatedImageElement);
+
+                const link = document.createElement('a');
+                link.download = `Driving_Record_${Date.now()}.png`;
+                link.href = generatedImageElement.src;
+                link.click();
+            } catch (err) {
+                alert("Generation failed, please try again");
+                exportContainer.style.display = "none";
+            }
         }
 
+        // 构建二维码数据
         function buildDataString() {
             const overtime = calculateOvertime();
+            const date = new Date(document.getElementById('date').value);
             
             return [
                 `driver:${document.getElementById("driver").value}`,
@@ -534,72 +520,20 @@
                 `end_km:${document.getElementById("end-km").value}`,
                 `fuel_cost:${document.getElementById("fuel").value}`,
                 `parking_fee:${document.getElementById("parking").value}`,
+                `car_wash:${document.getElementById("car-wash").value}`,
+                `maintenance:${document.getElementById("maintenance").value}`,
                 `taxi_fare:${document.getElementById("taxi").value}`,
-                `maintenance:${document.getElementById("repair").value}`,
-                `car_wash:${document.getElementById("wash").value}`,
-                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}`,
+                `is_weekend:${[0,6].includes(date.getDay())}`,
+                `overtime_hours:${overtime.breakdown.reduce((sum, item) => sum + parseFloat(item.hours), 0).toFixed(2)}`,
+                `overtime_rate:${[0,6].includes(date.getDay()) ? 25 : 20}`,
+                `overtime_amount:${overtime.total}`,
                 `total_cost:${(+document.getElementById("fuel").value + 
                               +document.getElementById("parking").value + 
+                              +document.getElementById("car-wash").value +
+                              +document.getElementById("maintenance").value +
                               +document.getElementById("taxi").value + 
-                              +document.getElementById("repair").value + 
-                              +document.getElementById("wash").value + 
                               overtime.total).toFixed(2)}`
             ].join("|");
-        }
-
-        async function generateAndShare() {
-            if (!validateInputs()) return;
-
-            syncFormData();
-
-            const exportContainer = document.getElementById("export-container");
-            const qrcodeDiv = document.getElementById("qrcode-section");
-            
-            // 生成二维码
-            qrcodeDiv.innerHTML = "";
-            new QRCode(qrcodeDiv, {
-                text: buildDataString(),
-                width: 150,
-                height: 150,
-                colorDark: "#2c3e50",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            // 等待渲染完成
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            try {
-                // 临时显示容器
-                exportContainer.style.left = "50%";
-                exportContainer.style.transform = "translateX(-50%)";
-                exportContainer.style.opacity = "1";
-                
-                const canvas = await html2canvas(exportContainer, {
-                    useCORS: true,
-                    scale: window.devicePixelRatio || 2,
-                    logging: false,
-                    allowTaint: true,
-                    backgroundColor: null
-                });
-
-                // 生成下载链接
-                const link = document.createElement('a');
-                link.download = `Driving_Record_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png', 1.0);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-
-            } catch (err) {
-                console.error('生成失败:', err);
-                alert("生成失败，请检查控制台日志");
-            } finally {
-                // 恢复隐藏状态
-                exportContainer.style.left = "-9999px";
-                exportContainer.style.transform = "none";
-                exportContainer.style.opacity = "0";
-            }
         }
 
         // 事件监听
@@ -608,9 +542,9 @@
         document.getElementById('date').addEventListener('change', syncFormData);
         document.getElementById('fuel').addEventListener('input', syncFormData);
         document.getElementById('parking').addEventListener('input', syncFormData);
+        document.getElementById('car-wash').addEventListener('input', syncFormData);
+        document.getElementById('maintenance').addEventListener('input', syncFormData);
         document.getElementById('taxi').addEventListener('input', syncFormData);
-        document.getElementById('repair').addEventListener('input', syncFormData);
-        document.getElementById('wash').addEventListener('input', syncFormData);
     </script>
 </body>
 </html>
