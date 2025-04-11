@@ -88,52 +88,50 @@
             position: fixed;
             left: -9999px;
             top: 0;
-            width: 90%;
-            max-width: 400px;
+            width: 100%;
+            max-width: 500px;
             background: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 12px;
             box-shadow: 0 2px 12px rgba(0,0,0,0.08);
             opacity: 0;
             pointer-events: none;
-            transform: scale(0.95);
         }
 
         .export-title {
-            font-size: 1.1em;
+            font-size: 1.2em;
             color: #2c3e50;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             font-weight: 600;
             text-align: center;
         }
 
         .summary-item {
-            margin: 10px 0;
-            padding: 12px;
+            margin: 12px 0;
+            padding: 14px;
             background: #f8f9fa;
-            border-radius: 8px;
+            border-radius: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            font-size: 14px;
         }
 
         .summary-label {
             color: #666;
             font-weight: 500;
-            flex: 1 1 100px;
-            margin-right: 10px;
+            flex: 1 1 120px;
+            margin-right: 15px;
         }
 
         #qrcode-section {
             text-align: center;
-            margin: 15px 0;
+            margin: 20px 0;
         }
 
         #qrcode-section canvas {
-            width: 120px !important;
-            height: 120px !important;
+            width: 140px !important;
+            height: 140px !important;
         }
 
         .total-cost {
@@ -144,16 +142,15 @@
 
         .overtime-details {
             background: #fff3e0;
-            padding: 12px;
-            border-radius: 8px;
-            margin: 12px 0;
-            font-size: 13px;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
         }
 
         .overtime-row {
             display: flex;
             justify-content: space-between;
-            margin: 6px 0;
+            margin: 8px 0;
             width: 100%;
         }
 
@@ -168,7 +165,7 @@
             }
 
             .header h2 {
-                font-size: 1.2em;
+                font-size: 1.3em;
                 padding: 0 10px;
             }
 
@@ -182,28 +179,20 @@
                 font-size: 16px;
             }
 
-            #export-container {
-                width: 85%;
-                padding: 12px;
-            }
-
             .summary-item {
-                padding: 10px;
-                font-size: 13px;
+                padding: 12px;
+                flex-direction: column;
+                align-items: flex-start;
             }
 
             .summary-label {
-                margin-bottom: 4px;
+                margin-bottom: 6px;
+                width: 100%;
             }
 
             #qrcode-section canvas {
-                width: 100px !important;
-                height: 100px !important;
-            }
-
-            .overtime-details {
-                padding: 10px;
-                font-size: 12px;
+                width: 120px !important;
+                height: 120px !important;
             }
         }
     </style>
@@ -299,7 +288,7 @@
 
     <div id="export-container">
         <img src="https://raw.githubusercontent.com/bobby520/car-log-form/main/company-logo.png"
-             class="company-logo"
+             class="export-logo"
              alt="Company Logo">
         <div class="export-title">Driving Record Summary</div>
         
@@ -368,6 +357,9 @@
     </div>
 
     <script>
+        let generatedImageElement = null;
+
+        // 日期时间处理核心函数
         function parseLocalDateTime(dateStr, timeStr) {
             const [year, month, day] = dateStr.split('-').map(Number);
             const [hours, minutes] = timeStr.split(':').map(Number);
@@ -563,38 +555,38 @@
             const exportContainer = document.getElementById("export-container");
             const qrcodeDiv = document.getElementById("qrcode-section");
             
+            // 生成二维码
             qrcodeDiv.innerHTML = "";
             new QRCode(qrcodeDiv, {
                 text: buildDataString(),
-                width: 120,
-                height: 120,
+                width: 150,
+                height: 150,
                 colorDark: "#2c3e50",
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // 等待渲染完成
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             try {
+                // 临时显示容器
                 exportContainer.style.left = "50%";
-                exportContainer.style.transform = "translateX(-50%) scale(0.95)";
+                exportContainer.style.transform = "translateX(-50%)";
                 exportContainer.style.opacity = "1";
                 
                 const canvas = await html2canvas(exportContainer, {
                     useCORS: true,
-                    scale: Math.min(window.devicePixelRatio, 1.5),
+                    scale: window.devicePixelRatio || 2,
                     logging: false,
                     allowTaint: true,
-                    backgroundColor: null,
-                    width: exportContainer.offsetWidth,
-                    height: exportContainer.offsetHeight,
-                    windowWidth: exportContainer.scrollWidth,
-                    windowHeight: exportContainer.scrollHeight
+                    backgroundColor: null
                 });
 
+                // 生成下载链接
                 const link = document.createElement('a');
                 link.download = `Driving_Record_${Date.now()}.png`;
-                link.href = canvas.toDataURL('image/png', 0.9);
+                link.href = canvas.toDataURL('image/png', 1.0);
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -603,12 +595,14 @@
                 console.error('生成失败:', err);
                 alert("生成失败，请检查控制台日志");
             } finally {
+                // 恢复隐藏状态
                 exportContainer.style.left = "-9999px";
                 exportContainer.style.transform = "none";
                 exportContainer.style.opacity = "0";
             }
         }
 
+        // 事件监听
         document.getElementById('start-time').addEventListener('change', syncFormData);
         document.getElementById('end-time').addEventListener('change', syncFormData);
         document.getElementById('date').addEventListener('change', syncFormData);
