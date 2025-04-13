@@ -132,6 +132,23 @@
             margin: 10px 0;
             display: none;
         }
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4444;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { top: -50px; }
+            to { top: 20px; }
+        }
         @media (max-width: 480px) {
             .form-group input {
                 font-size: 14px;
@@ -311,7 +328,6 @@
                           'start-km', 'end-time', 'end-km', 'fuel', 'parking',
                           'car-wash', 'maintenance', 'taxi'];
 
-        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -341,7 +357,6 @@
             });
         });
 
-        // 草稿功能
         function saveDraft() {
             if (!currentDriver) return;
             
@@ -401,7 +416,6 @@
             document.getElementById('date').value = new Date().toISOString().split('T')[0];
         }
 
-        // 时间处理
         function parseDateTime(dateStr, timeStr) {
             const [hours, minutes] = timeStr.split(':').map(Number);
             const date = new Date(dateStr);
@@ -409,7 +423,6 @@
             return date;
         }
 
-        // 加班费计算
         function calculateOvertime() {
             const start = document.getElementById('start-time').value;
             const end = document.getElementById('end-time').value;
@@ -470,7 +483,6 @@
             };
         }
 
-        // 数据同步
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -529,76 +541,85 @@
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
-        // 生成数据字符串
+        // 修改后的 buildDataString()：压缩字段名，同时生成 JSON 字符串
         function buildDataString() {
             const overtime = calculateOvertime();
-            return [
-                `driver:${document.getElementById("driver").value}`,
-                `plate:${document.getElementById("plate").value}`,
-                `date:${document.getElementById("date").value}`,
-                `start_time:${document.getElementById("start-time").value}`,
-                `end_time:${document.getElementById("end-time").value}`,
-                `booker:${document.getElementById("name").value}`,
-                `start_km:${document.getElementById("start-km").value}`,
-                `end_km:${document.getElementById("end-km").value}`,
-                `fuel_cost:${document.getElementById("fuel").value}`,
-                `parking_fee:${document.getElementById("parking").value}`,
-                `car_wash:${document.getElementById("car-wash").value}`,
-                `maintenance:${document.getElementById("maintenance").value}`,
-                `taxi_fare:${document.getElementById("taxi").value}`,
-                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}`,
-                `total_cost:${(+document.getElementById("fuel").value + 
-                              +document.getElementById("parking").value + 
-                              +document.getElementById("car-wash").value +
-                              +document.getElementById("maintenance").value +
-                              +document.getElementById("taxi").value + 
-                              overtime.total).toFixed(2)}`
-            ].join("|");
+            const data = {
+                d: document.getElementById("driver").value,
+                pl: document.getElementById("plate").value,
+                dt: document.getElementById("date").value,
+                st: document.getElementById("start-time").value,
+                et: document.getElementById("end-time").value,
+                bk: document.getElementById("name").value,
+                sk: document.getElementById("start-km").value,
+                ek: document.getElementById("end-km").value,
+                f: document.getElementById("fuel").value,
+                p: document.getElementById("parking").value,
+                cw: document.getElementById("car-wash").value,
+                m: document.getElementById("maintenance").value,
+                tx: document.getElementById("taxi").value,
+                ot: overtime.total.toFixed(2),
+                tt: (
+                    +document.getElementById("fuel").value + 
+                    +document.getElementById("parking").value + 
+                    +document.getElementById("car-wash").value +
+                    +document.getElementById("maintenance").value +
+                    +document.getElementById("taxi").value + 
+                    overtime.total
+                ).toFixed(2)
+            };
+            return JSON.stringify(data);
         }
 
-        // 生成记录
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-toast';
+            errorDiv.textContent = message;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 3000);
+        }
+
         async function generateAndShare() {
-            const startKm = +document.getElementById("start-km").value;
-            const endKm = +document.getElementById("end-km").value;
-            if (endKm <= startKm) {
-                alert("Error: End odometer must be greater than start!");
-                return;
-            }
-
-            const fuel = +document.getElementById('fuel').value;
-            const parking = +document.getElementById('parking').value;
-            const carWash = +document.getElementById('car-wash').value;
-            const maintenance = +document.getElementById('maintenance').value;
-            const taxi = +document.getElementById('taxi').value;
-            if(fuel < 0 || parking < 0 || carWash < 0 || maintenance < 0 || taxi < 0) {
-                alert("Error: Costs cannot be negative!");
-                return;
-            }
-
-            syncFormData();
-
-            const qrcodeDiv = document.getElementById("qrcode-section");
-            qrcodeDiv.innerHTML = "";
-            
-            await new Promise(resolve => requestAnimationFrame(resolve));
-            
-            new QRCode(qrcodeDiv, {
-                text: buildDataString(),
-                width: 150,
-                height: 150,
-                colorDark: "#2c3e50",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            await new Promise(resolve => setTimeout(resolve, 300));
-
             try {
+                const startKm = +document.getElementById("start-km").value;
+                const endKm = +document.getElementById("end-km").value;
+                if (endKm <= startKm) {
+                    throw new Error("结束里程必须大于开始里程！");
+                }
+
+                const costItems = ['fuel', 'parking', 'car-wash', 'maintenance', 'taxi'];
+                for (const id of costItems) {
+                    const value = +document.getElementById(id).value;
+                    if (value < 0) {
+                        throw new Error("费用不能为负数！");
+                    }
+                }
+
+                syncFormData();
+
+                const qrcodeDiv = document.getElementById("qrcode-section");
+                qrcodeDiv.innerHTML = "";
+                
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                
+                new QRCode(qrcodeDiv, {
+                    text: buildDataString(),
+                    width: 150,
+                    height: 150,
+                    colorDark: "#2c3e50",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+
                 const exportContainer = document.getElementById("export-container");
                 exportContainer.style.display = "flex";
                 const canvas = await html2canvas(exportContainer, {
                     useCORS: true,
-                    scale: 2
+                    allowTaint: true,
+                    scale: 2,
+                    logging: true
                 });
                 exportContainer.style.display = "none";
 
@@ -608,22 +629,27 @@
                 generatedImageElement.id = 'generated-image';
                 document.body.appendChild(generatedImageElement);
 
-                const link = document.createElement('a');
-                link.download = `Driving_Record_${Date.now()}.png`;
-                link.href = generatedImageElement.src;
-                link.click();
+                if (/MicroMessenger/i.test(navigator.userAgent)) {
+                    showError("请长按图片保存到手机");
+                    generatedImageElement.style.display = 'block';
+                } else {
+                    const link = document.createElement('a');
+                    link.download = `Driving_Record_${Date.now()}.png`;
+                    link.href = generatedImageElement.src;
+                    link.click();
+                }
 
                 localStorage.removeItem(`draft_${currentDriver}`);
                 currentDriver = null;
                 localStorage.removeItem('lastDriver');
                 clearForm();
+
             } catch (err) {
-                alert("Generation failed, please try again");
-                exportContainer.style.display = "none";
+                showError(err.message);
+                console.error("生成失败:", err);
             }
         }
 
-        // 其他事件监听
         document.getElementById('plate').addEventListener('change', function() {
             if (this.value === 'Other') {
                 const manualPlate = prompt('Enter license plate:');
@@ -638,7 +664,6 @@
             }
         });
 
-        // 输入事件监听
         document.getElementById('start-time').addEventListener('change', syncFormData);
         document.getElementById('end-time').addEventListener('change', syncFormData);
         document.getElementById('date').addEventListener('change', syncFormData);
