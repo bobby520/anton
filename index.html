@@ -298,91 +298,16 @@
 
     <script>
         let generatedImageElement = null;
-        const STORAGE_KEY = 'driving_records_draft';
 
-        // 本地存储功能
-        function saveDraft() {
-            const driver = document.getElementById('driver').value;
-            if (!driver) return;
-            
-            const draftData = {
-                driver,
-                date: document.getElementById('date').value,
-                plate: document.getElementById('plate').value,
-                name: document.getElementById('name').value,
-                startTime: document.getElementById('start-time').value,
-                startKm: document.getElementById('start-km').value,
-                endTime: document.getElementById('end-time').value,
-                endKm: document.getElementById('end-km').value,
-                fuel: document.getElementById('fuel').value,
-                parking: document.getElementById('parking').value,
-                carWash: document.getElementById('car-wash').value,
-                maintenance: document.getElementById('maintenance').value,
-                taxi: document.getElementById('taxi').value
-            };
-            
-            const allDrafts = JSON.parse(localStorage.getItem(STORAGE_KEY) || {};
-            allDrafts[driver] = draftData;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allDrafts));
-        }
-
-        function loadDraft(driver) {
-            const allDrafts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-            const draft = allDrafts[driver];
-            
-            if (draft) {
-                document.getElementById('date').value = draft.date || '';
-                document.getElementById('plate').value = draft.plate || '';
-                document.getElementById('name').value = draft.name || '';
-                document.getElementById('start-time').value = draft.startTime || '';
-                document.getElementById('start-km').value = draft.startKm || '';
-                document.getElementById('end-time').value = draft.endTime || '';
-                document.getElementById('end-km').value = draft.endKm || '';
-                document.getElementById('fuel').value = draft.fuel || '';
-                document.getElementById('parking').value = draft.parking || '';
-                document.getElementById('car-wash').value = draft.carWash || '';
-                document.getElementById('maintenance').value = draft.maintenance || '';
-                document.getElementById('taxi').value = draft.taxi || '';
-            }
-            syncFormData();
-        }
-
-        function clearDraft() {
-            const driver = document.getElementById('driver').value;
-            const allDrafts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-            delete allDrafts[driver];
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(allDrafts));
-        }
-
-        // 初始化
+        // 初始化日期为当天
         document.addEventListener('DOMContentLoaded', function() {
-            const lastDriver = localStorage.getItem('last_selected_driver');
-            if (lastDriver) {
-                document.getElementById('driver').value = lastDriver;
-                loadDraft(lastDriver);
-            }
-            
             const dateInput = document.getElementById('date');
-            if (!dateInput.value) {
-                const now = new Date();
-                const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-                dateInput.value = localDate.toISOString().substring(0, 10);
-            }
+            const now = new Date();
+            const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            dateInput.value = localDate.toISOString().substring(0, 10);
         });
 
-        document.getElementById('driver').addEventListener('change', function() {
-            localStorage.setItem('last_selected_driver', this.value);
-            loadDraft(this.value);
-        });
-
-        const inputs = document.querySelectorAll('input, select');
-        inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                saveDraft();
-                syncFormData();
-            });
-        });
-
+        // 处理手动输入车牌号
         document.getElementById('plate').addEventListener('change', function() {
             if (this.value === 'Other') {
                 const manualPlate = prompt('Enter license plate:');
@@ -394,10 +319,9 @@
                     this.value = manualPlate;
                 }
             }
-            saveDraft();
         });
 
-        // 原有功能函数
+        // 精确的时间解析函数
         function parseDateTime(dateStr, timeStr) {
             const [hours, minutes] = timeStr.split(':').map(Number);
             const date = new Date(dateStr);
@@ -405,6 +329,7 @@
             return date;
         }
 
+        // 改进的加班费计算逻辑
         function calculateOvertime() {
             const start = document.getElementById('start-time').value;
             const end = document.getElementById('end-time').value;
@@ -424,9 +349,11 @@
                 const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
                 const actualEnd = hourEnd > endTime ? endTime : hourEnd;
                 
+                // 判断是否为周末（周六=6，周日=0）
                 const isWeekend = [0, 6].includes(hourStart.getDay());
                 const rate = isWeekend ? 25 : 20;
                 
+                // 计算有效加班时间（排除08:00-17:00的工作时间）
                 let effectiveHours = 0;
                 if (!isWeekend) {
                     const workStart = new Date(hourStart);
@@ -465,6 +392,7 @@
             };
         }
 
+        // 同步表单数据显示
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -475,6 +403,7 @@
             document.getElementById('show-odo').textContent = 
                 `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
+            // 费用显示控制
             const controlItem = (value, itemId, showId) => {
                 const element = document.getElementById(itemId);
                 const showElement = document.getElementById(showId);
@@ -501,6 +430,7 @@
             const taxi = +document.getElementById('taxi').value || 0;
             controlItem(taxi, 'taxi-item', 'show-taxi');
 
+            // 加班费显示
             const overtime = calculateOvertime();
             const overtimeSection = document.getElementById('overtime-section');
             if (overtime.total > 0) {
@@ -519,10 +449,12 @@
                 overtimeSection.style.display = "none";
             }
 
+            // 总费用计算
             const totalCost = fuel + parking + carWash + maintenance + taxi + overtime.total;
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
+        // 生成数据字符串
         function buildDataString() {
             const overtime = calculateOvertime();
             return [
@@ -549,6 +481,7 @@
             ].join("|");
         }
 
+        // 生成并分享记录
         async function generateAndShare() {
             const startKm = +document.getElementById("start-km").value;
             const endKm = +document.getElementById("end-km").value;
@@ -595,7 +528,6 @@
                 });
 
                 exportContainer.style.display = "none";
-                clearDraft();
 
                 if (generatedImageElement) generatedImageElement.remove();
                 generatedImageElement = document.createElement('img');
@@ -612,6 +544,16 @@
                 exportContainer.style.display = "none";
             }
         }
+
+        // 实时更新显示
+        document.getElementById('start-time').addEventListener('change', syncFormData);
+        document.getElementById('end-time').addEventListener('change', syncFormData);
+        document.getElementById('date').addEventListener('change', syncFormData);
+        document.getElementById('fuel').addEventListener('input', syncFormData);
+        document.getElementById('parking').addEventListener('input', syncFormData);
+        document.getElementById('car-wash').addEventListener('input', syncFormData);
+        document.getElementById('maintenance').addEventListener('input', syncFormData);
+        document.getElementById('taxi').addEventListener('input', syncFormData);
     </script>
 </body>
 </html>
