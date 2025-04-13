@@ -99,7 +99,7 @@
             background: #f8f9fa;
             border-radius: 5px;
             font-size: 0.9em;
-            display: block; /* 修改为block以正确隐藏 */
+            display: block;
         }
         .summary-label {
             color: #666;
@@ -117,12 +117,13 @@
             padding: 10px;
             border-radius: 5px;
             margin: 10px 0;
-            display: none; /* 默认隐藏加班费区块 */
+            display: none;
         }
         .overtime-row {
             display: flex;
             justify-content: space-between;
             margin: 5px 0;
+            font-size: 0.85em;
         }
         @media (max-width: 480px) {
             .form-group input {
@@ -259,7 +260,6 @@
                 <span id="show-odo"></span>
             </div>
 
-            <!-- 费用显示项 -->
             <div class="summary-item" id="fuel-item">
                 <span class="summary-label">Fuel Cost:</span>
                 <span id="show-fuel"></span>
@@ -299,6 +299,7 @@
     <script>
         let generatedImageElement = null;
 
+        // 初始化日期为当天
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -306,6 +307,7 @@
             dateInput.value = localDate.toISOString().substring(0, 10);
         });
 
+        // 处理手动输入车牌号
         document.getElementById('plate').addEventListener('change', function() {
             if (this.value === 'Other') {
                 const manualPlate = prompt('Enter license plate:');
@@ -319,6 +321,15 @@
             }
         });
 
+        // 精确的时间解析函数
+        function parseDateTime(dateStr, timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const date = new Date(dateStr);
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+        }
+
+        // 改进的加班费计算逻辑
         function calculateOvertime() {
             const start = document.getElementById('start-time').value;
             const end = document.getElementById('end-time').value;
@@ -326,73 +337,62 @@
             
             if (!start || !end || !dateInput) return { total: 0, breakdown: [] };
 
-            const date = new Date(dateInput);
-            const yyyy = date.getFullYear();
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const dd = String(date.getDate()).padStart(2, '0');
-            const dateStr = `${yyyy}-${mm}-${dd}`;
+            let current = parseDateTime(dateInput, start);
+            const endTime = parseDateTime(dateInput, end);
+            if (endTime < current) endTime.setDate(endTime.getDate() + 1);
 
-            const startDateTime = new Date(`${dateStr}T${start}`);
-            let endDateTime = new Date(`${dateStr}T${end}`);
-            
-            if (endDateTime < startDateTime) endDateTime.setDate(endDateTime.getDate() + 1);
+            const results = [];
+            let total = 0;
 
-            const calculateHours = (start, end) => {
-                return Number(((end - start) / 3600000).toFixed(2));
-            };
+            while (current < endTime) {
+                const hourStart = new Date(current);
+                const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
+                const actualEnd = hourEnd > endTime ? endTime : hourEnd;
+                
+                // 判断是否为周末（周六=6，周日=0）
+                const isWeekend = [0, 6].includes(hourStart.getDay());
+                const rate = isWeekend ? 25 : 20;
+                
+                // 计算有效加班时间（排除08:00-17:00的工作时间）
+                let effectiveHours = 0;
+                if (!isWeekend) {
+                    const workStart = new Date(hourStart);
+                    workStart.setHours(8, 0, 0, 0);
+                    const workEnd = new Date(hourStart);
+                    workEnd.setHours(17, 0, 0, 0);
 
-            const isWeekend = [0, 6].includes(date.getDay());
-            const NORMAL_START = 8;
-            const NORMAL_END = 17;
-            let overtime = { total: 0, breakdown: [] };
-
-            if (isWeekend) {
-                const hours = calculateHours(startDateTime, endDateTime);
-                const rate = 25;
-                overtime.total = hours * rate;
-                overtime.breakdown.push({
-                    type: 'Weekend Overtime',
-                    hours: hours.toFixed(2),
-                    rate: rate,
-                    amount: +(hours * rate).toFixed(2)
-                });
-            } else {
-                const endEarly = new Date(startDateTime);
-                endEarly.setHours(NORMAL_START, 0, 0, 0);
-                const earlyEnd = endDateTime < endEarly ? endDateTime : endEarly;
-                if (startDateTime < earlyEnd) {
-                    const hours = calculateHours(startDateTime, earlyEnd);
-                    if (hours > 0) {
-                        overtime.breakdown.push({
-                            type: 'Early Overtime',
-                            hours: hours.toFixed(2),
-                            rate: 20,
-                            amount: +(hours * 20).toFixed(2)
-                        });
+                    const overlapStart = hourStart < workStart ? workStart : hourStart;
+                    const overlapEnd = actualEnd > workEnd ? workEnd : actualEnd;
+                    
+                    if (overlapStart < overlapEnd) {
+                        effectiveHours = (overlapEnd - overlapStart) / 3600000;
                     }
+                } else {
+                    effectiveHours = (actualEnd - hourStart) / 3600000;
                 }
 
-                const startLate = new Date(startDateTime);
-                startLate.setHours(NORMAL_END, 0, 0, 0);
-                const lateStart = startDateTime > startLate ? startDateTime : startLate;
-                if (endDateTime > lateStart) {
-                    const hours = calculateHours(lateStart, endDateTime);
-                    if (hours > 0) {
-                        overtime.breakdown.push({
-                            type: 'Late Overtime',
-                            hours: hours.toFixed(2),
-                            rate: 20,
-                            amount: +(hours * 20).toFixed(2)
-                        });
-                    }
+                if (effectiveHours > 0) {
+                    const amount = effectiveHours * rate;
+                    results.push({
+                        start: hourStart.toLocaleString('en-US', { hour12: false }),
+                        end: actualEnd.toLocaleString('en-US', { hour12: false }),
+                        hours: effectiveHours.toFixed(2),
+                        rate: rate,
+                        amount: +amount.toFixed(2)
+                    });
+                    total += amount;
                 }
 
-                overtime.total = +overtime.breakdown.reduce((sum, item) => sum + item.amount, 0).toFixed(2);
+                current = hourEnd;
             }
 
-            return overtime;
+            return {
+                total: +total.toFixed(2),
+                breakdown: results
+            };
         }
 
+        // 同步表单数据显示
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -403,7 +403,7 @@
             document.getElementById('show-odo').textContent = 
                 `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
-            // 控制费用显示逻辑
+            // 费用显示控制
             const controlItem = (value, itemId, showId) => {
                 const element = document.getElementById(itemId);
                 const showElement = document.getElementById(showId);
@@ -430,7 +430,7 @@
             const taxi = +document.getElementById('taxi').value || 0;
             controlItem(taxi, 'taxi-item', 'show-taxi');
 
-            // 控制加班费显示
+            // 加班费显示
             const overtime = calculateOvertime();
             const overtimeSection = document.getElementById('overtime-section');
             if (overtime.total > 0) {
@@ -440,122 +440,84 @@
                 const breakdownDiv = document.getElementById('overtime-breakdown');
                 breakdownDiv.innerHTML = overtime.breakdown.map(item => `
                     <div class="overtime-row">
-                        <span>${item.type}</span>
+                        <span>${item.start.split(', ')[1]} - ${item.end.split(', ')[1]}</span>
                         <span>${item.hours}h × ${item.rate}AED</span>
-                        <span>${item.amount}AED</span>
+                        <span>${item.amount.toFixed(2)}AED</span>
                     </div>
                 `).join('');
             } else {
                 overtimeSection.style.display = "none";
             }
 
-            // 计算总费用
+            // 总费用计算
             const totalCost = fuel + parking + carWash + maintenance + taxi + overtime.total;
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
-        async function generateAndShare() {
-            const startKm = +document.getElementById("start-km").value;
-            const endKm = +document.getElementById("end-km").value;
-            if (endKm <= startKm) {
-                alert("Error: End odometer must be greater than start!");
-                return;
-            }
-
-            const fuel = +document.getElementById('fuel').value;
-            const parking = +document.getElementById('parking').value;
-            const carWash = +document.getElementById('car-wash').value;
-            const maintenance = +document.getElementById('maintenance').value;
-            const taxi = +document.getElementById('taxi').value;
-            if(fuel < 0 || parking < 0 || carWash < 0 || maintenance < 0 || taxi < 0) {
-                alert("Error: Costs cannot be negative!");
-                return;
-            }
-
-            syncFormData();
-
-            const qrcodeDiv = document.getElementById("qrcode-section");
-            qrcodeDiv.innerHTML = "";
-            
-            await new Promise(resolve => requestAnimationFrame(resolve));
-            
-            new QRCode(qrcodeDiv, {
-                text: buildDataString(),
-                width: 150,
-                height: 150,
-                colorDark: "#2c3e50",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            const exportContainer = document.getElementById("export-container");
-            exportContainer.style.display = "flex";
-            
-            try {
-                const canvas = await html2canvas(exportContainer, {
-                    useCORS: true,
-                    scale: 2
-                });
-
-                exportContainer.style.display = "none";
-
-                if (generatedImageElement) generatedImageElement.remove();
-                generatedImageElement = document.createElement('img');
-                generatedImageElement.src = canvas.toDataURL();
-                generatedImageElement.id = 'generated-image';
-                document.body.appendChild(generatedImageElement);
-
-                const link = document.createElement('a');
-                link.download = `Driving_Record_${Date.now()}.png`;
-                link.href = generatedImageElement.src;
-                link.click();
-            } catch (err) {
-                alert("Generation failed, please try again");
-                exportContainer.style.display = "none";
-            }
-        }
-
+               // 生成数据字符串（续）
         function buildDataString() {
             const overtime = calculateOvertime();
-            const date = new Date(document.getElementById('date').value);
-            
             return [
-                `driver:${document.getElementById("driver").value}`,
-                `plate:${document.getElementById("plate").value}`,
-                `date:${document.getElementById("date").value}`,
-                `start_time:${document.getElementById("start-time").value}`,
-                `end_time:${document.getElementById("end-time").value}`,
-                `booker:${document.getElementById("name").value}`,
-                `start_km:${document.getElementById("start-km").value}`,
-                `end_km:${document.getElementById("end-km").value}`,
-                `fuel_cost:${document.getElementById("fuel").value}`,
-                `parking_fee:${document.getElementById("parking").value}`,
-                `car_wash:${document.getElementById("car-wash").value}`,
-                `maintenance:${document.getElementById("maintenance").value}`,
-                `taxi_fare:${document.getElementById("taxi").value}`,
-                `is_weekend:${[0,6].includes(date.getDay())}`,
-                `overtime_hours:${overtime.breakdown.reduce((sum, item) => sum + parseFloat(item.hours), 0).toFixed(2)}`,
-                `overtime_rate:${[0,6].includes(date.getDay()) ? 25 : 20}`,
-                `overtime_amount:${overtime.total}`,
-                `total_cost:${(+document.getElementById("fuel").value + 
-                              +document.getElementById("parking").value + 
-                              +document.getElementById("car-wash").value +
-                              +document.getElementById("maintenance").value +
-                              +document.getElementById("taxi").value + 
-                              overtime.total).toFixed(2)}`
-            ].join("|");
+                `driver:${document.getElementById("driver").value}`, 
+                `plate:${document.getElementById("plate").value}`, 
+                `date:${document.getElementById("date").value}`, 
+                `start_time:${document.getElementById("start-time").value}`, 
+                `end_time:${document.getElementById("end-time").value}`, 
+                `booker:${document.getElementById("name").value}`, 
+                `start_km:${document.getElementById("start-km").value}`, 
+                `end_km:${document.getElementById("end-km").value}`, 
+                `fuel_cost:${document.getElementById("fuel").value}`, 
+                `parking_fee:${document.getElementById("parking").value}`, 
+                `car_wash:${document.getElementById("car-wash").value}`, 
+                `maintenance:${document.getElementById("maintenance").value}`, 
+                `taxi:${document.getElementById("taxi").value}`, 
+                `overtime_total:${overtime.total}`, 
+                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}` 
+            ].join('%0A'); // 使用URL换行编码 
         }
-
-        document.getElementById('start-time').addEventListener('change', syncFormData);
-        document.getElementById('end-time').addEventListener('change', syncFormData);
-        document.getElementById('date').addEventListener('change', syncFormData);
-        document.getElementById('fuel').addEventListener('input', syncFormData);
-        document.getElementById('parking').addEventListener('input', syncFormData);
-        document.getElementById('car-wash').addEventListener('input', syncFormData);
-        document.getElementById('maintenance').addEventListener('input', syncFormData);
-        document.getElementById('taxi').addEventListener('input', syncFormData);
+ 
+        // 生成二维码和导出图像 
+        function generateAndShare() {
+            event.preventDefault(); 
+            
+            // 表单验证 
+            const requiredFields = document.querySelectorAll('[required]'); 
+            let isValid = true;
+            requiredFields.forEach(field  => {
+                if (!field.value)  isValid = false;
+            });
+            if (!isValid) return alert('请填写所有必填字段');
+ 
+            syncFormData(); 
+            document.getElementById('export-container').style.display  = 'flex';
+ 
+            // 生成二维码 
+            const qrData = buildDataString();
+            const qrcodeDiv = document.getElementById('qrcode-section'); 
+            qrcodeDiv.innerHTML  = '';
+            new QRCode(qrcodeDiv, {
+                text: qrData,
+                width: 150,
+                height: 150,
+                correctLevel: QRCode.CorrectLevel.H 
+            });
+ 
+            // 生成可下载图片 
+            html2canvas(document.querySelector("#export-container")).then(canvas  => {
+                if (generatedImageElement) generatedImageElement.remove(); 
+                const imgURL = canvas.toDataURL(); 
+                generatedImageElement = document.createElement('img'); 
+                generatedImageElement.id  = 'generated-image';
+                generatedImageElement.src  = imgURL;
+                document.body.appendChild(generatedImageElement); 
+                
+                // 自动下载 
+                const link = document.createElement('a'); 
+                link.download  = `driving-record-${Date.now()}.png`; 
+                link.href  = imgURL;
+                link.click(); 
+            });
+        }
     </script>
 </body>
 </html>
