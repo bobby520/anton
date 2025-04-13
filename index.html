@@ -454,70 +454,106 @@
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
-               // 生成数据字符串（续）
+        // 生成数据字符串
         function buildDataString() {
             const overtime = calculateOvertime();
             return [
-                `driver:${document.getElementById("driver").value}`, 
-                `plate:${document.getElementById("plate").value}`, 
-                `date:${document.getElementById("date").value}`, 
-                `start_time:${document.getElementById("start-time").value}`, 
-                `end_time:${document.getElementById("end-time").value}`, 
-                `booker:${document.getElementById("name").value}`, 
-                `start_km:${document.getElementById("start-km").value}`, 
-                `end_km:${document.getElementById("end-km").value}`, 
-                `fuel_cost:${document.getElementById("fuel").value}`, 
-                `parking_fee:${document.getElementById("parking").value}`, 
-                `car_wash:${document.getElementById("car-wash").value}`, 
-                `maintenance:${document.getElementById("maintenance").value}`, 
-                `taxi:${document.getElementById("taxi").value}`, 
-                `overtime_total:${overtime.total}`, 
-                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}` 
-            ].join('%0A'); // 使用URL换行编码 
+                `driver:${document.getElementById("driver").value}`,
+                `plate:${document.getElementById("plate").value}`,
+                `date:${document.getElementById("date").value}`,
+                `start_time:${document.getElementById("start-time").value}`,
+                `end_time:${document.getElementById("end-time").value}`,
+                `booker:${document.getElementById("name").value}`,
+                `start_km:${document.getElementById("start-km").value}`,
+                `end_km:${document.getElementById("end-km").value}`,
+                `fuel_cost:${document.getElementById("fuel").value}`,
+                `parking_fee:${document.getElementById("parking").value}`,
+                `car_wash:${document.getElementById("car-wash").value}`,
+                `maintenance:${document.getElementById("maintenance").value}`,
+                `taxi_fare:${document.getElementById("taxi").value}`,
+                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}`,
+                `total_cost:${(+document.getElementById("fuel").value + 
+                              +document.getElementById("parking").value + 
+                              +document.getElementById("car-wash").value +
+                              +document.getElementById("maintenance").value +
+                              +document.getElementById("taxi").value + 
+                              overtime.total).toFixed(2)}`
+            ].join("|");
         }
- 
-        // 生成二维码和导出图像 
-        function generateAndShare() {
-            event.preventDefault(); 
+
+        // 生成并分享记录
+        async function generateAndShare() {
+            const startKm = +document.getElementById("start-km").value;
+            const endKm = +document.getElementById("end-km").value;
+            if (endKm <= startKm) {
+                alert("Error: End odometer must be greater than start!");
+                return;
+            }
+
+            const fuel = +document.getElementById('fuel').value;
+            const parking = +document.getElementById('parking').value;
+            const carWash = +document.getElementById('car-wash').value;
+            const maintenance = +document.getElementById('maintenance').value;
+            const taxi = +document.getElementById('taxi').value;
+            if(fuel < 0 || parking < 0 || carWash < 0 || maintenance < 0 || taxi < 0) {
+                alert("Error: Costs cannot be negative!");
+                return;
+            }
+
+            syncFormData();
+
+            const qrcodeDiv = document.getElementById("qrcode-section");
+            qrcodeDiv.innerHTML = "";
             
-            // 表单验证 
-            const requiredFields = document.querySelectorAll('[required]'); 
-            let isValid = true;
-            requiredFields.forEach(field  => {
-                if (!field.value)  isValid = false;
-            });
-            if (!isValid) return alert('请填写所有必填字段');
- 
-            syncFormData(); 
-            document.getElementById('export-container').style.display  = 'flex';
- 
-            // 生成二维码 
-            const qrData = buildDataString();
-            const qrcodeDiv = document.getElementById('qrcode-section'); 
-            qrcodeDiv.innerHTML  = '';
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            
             new QRCode(qrcodeDiv, {
-                text: qrData,
+                text: buildDataString(),
                 width: 150,
                 height: 150,
-                correctLevel: QRCode.CorrectLevel.H 
+                colorDark: "#2c3e50",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
             });
- 
-            // 生成可下载图片 
-            html2canvas(document.querySelector("#export-container")).then(canvas  => {
-                if (generatedImageElement) generatedImageElement.remove(); 
-                const imgURL = canvas.toDataURL(); 
-                generatedImageElement = document.createElement('img'); 
-                generatedImageElement.id  = 'generated-image';
-                generatedImageElement.src  = imgURL;
-                document.body.appendChild(generatedImageElement); 
-                
-                // 自动下载 
-                const link = document.createElement('a'); 
-                link.download  = `driving-record-${Date.now()}.png`; 
-                link.href  = imgURL;
-                link.click(); 
-            });
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            const exportContainer = document.getElementById("export-container");
+            exportContainer.style.display = "flex";
+            
+            try {
+                const canvas = await html2canvas(exportContainer, {
+                    useCORS: true,
+                    scale: 2
+                });
+
+                exportContainer.style.display = "none";
+
+                if (generatedImageElement) generatedImageElement.remove();
+                generatedImageElement = document.createElement('img');
+                generatedImageElement.src = canvas.toDataURL();
+                generatedImageElement.id = 'generated-image';
+                document.body.appendChild(generatedImageElement);
+
+                const link = document.createElement('a');
+                link.download = `Driving_Record_${Date.now()}.png`;
+                link.href = generatedImageElement.src;
+                link.click();
+            } catch (err) {
+                alert("Generation failed, please try again");
+                exportContainer.style.display = "none";
+            }
         }
+
+        // 实时更新显示
+        document.getElementById('start-time').addEventListener('change', syncFormData);
+        document.getElementById('end-time').addEventListener('change', syncFormData);
+        document.getElementById('date').addEventListener('change', syncFormData);
+        document.getElementById('fuel').addEventListener('input', syncFormData);
+        document.getElementById('parking').addEventListener('input', syncFormData);
+        document.getElementById('car-wash').addEventListener('input', syncFormData);
+        document.getElementById('maintenance').addEventListener('input', syncFormData);
+        document.getElementById('taxi').addEventListener('input', syncFormData);
     </script>
 </body>
 </html>
