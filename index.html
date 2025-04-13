@@ -125,6 +125,13 @@
             margin: 5px 0;
             font-size: 0.85em;
         }
+        .draft-notice {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin: 10px 0;
+            display: none;
+        }
         @media (max-width: 480px) {
             .form-group input {
                 font-size: 14px;
@@ -142,6 +149,7 @@
              alt="Company Logo">
         <h2>Anton Oilfield Services DMCC Driving System</h2>
     </div>
+    <div class="draft-notice" id="draft-notice">已加载自动保存的草稿 ✎</div>
 
     <div class="form-section">
         <div class="form-group">
@@ -298,30 +306,102 @@
 
     <script>
         let generatedImageElement = null;
+        let currentDriver = null;
+        const formFields = ['driver', 'date', 'plate', 'name', 'start-time', 
+                          'start-km', 'end-time', 'end-km', 'fuel', 'parking',
+                          'car-wash', 'maintenance', 'taxi'];
 
-        // 初始化日期为当天
+        // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
             const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
             dateInput.value = localDate.toISOString().substring(0, 10);
-        });
 
-        // 处理手动输入车牌号
-        document.getElementById('plate').addEventListener('change', function() {
-            if (this.value === 'Other') {
-                const manualPlate = prompt('Enter license plate:');
-                if (manualPlate) {
-                    const newOption = document.createElement('option');
-                    newOption.value = manualPlate;
-                    newOption.textContent = manualPlate;
-                    this.appendChild(newOption);
-                    this.value = manualPlate;
-                }
+            const lastDriver = localStorage.getItem('lastDriver');
+            if (lastDriver) {
+                document.getElementById('driver').value = lastDriver;
+                currentDriver = lastDriver;
+                loadDraft(lastDriver);
             }
+
+            formFields.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', saveDraft);
+                    element.addEventListener('change', saveDraft);
+                }
+            });
+
+            document.getElementById('driver').addEventListener('change', function(e) {
+                if (currentDriver) saveDraft();
+                currentDriver = e.target.value;
+                localStorage.setItem('lastDriver', currentDriver);
+                loadDraft(currentDriver);
+            });
         });
 
-        // 精确的时间解析函数
+        // 草稿功能
+        function saveDraft() {
+            if (!currentDriver) return;
+            
+            const draftData = {};
+            formFields.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (id === 'plate' && element.value === 'Other') {
+                        const manualPlate = element.options[element.selectedIndex].text;
+                        draftData[id] = manualPlate;
+                    } else {
+                        draftData[id] = element.value;
+                    }
+                }
+            });
+            
+            localStorage.setItem(`draft_${currentDriver}`, JSON.stringify(draftData));
+        }
+
+        function loadDraft(driver) {
+            const draft = JSON.parse(localStorage.getItem(`draft_${driver}`));
+            if (!draft) return clearForm();
+
+            formFields.forEach(id => {
+                const element = document.getElementById(id);
+                if (element && draft[id]) {
+                    if (id === 'plate') {
+                        handlePlateLoading(element, draft[id]);
+                    } else {
+                        element.value = draft[id];
+                    }
+                }
+            });
+
+            document.getElementById('draft-notice').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('draft-notice').style.display = 'none';
+            }, 3000);
+            syncFormData();
+        }
+
+        function handlePlateLoading(selectElement, value) {
+            const options = Array.from(selectElement.options);
+            const exists = options.some(opt => opt.value === value || opt.text === value);
+            if (!exists && value !== 'Other') {
+                const newOption = new Option(value, value);
+                selectElement.appendChild(newOption);
+            }
+            selectElement.value = value;
+        }
+
+        function clearForm() {
+            formFields.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.value = '';
+            });
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+        }
+
+        // 时间处理
         function parseDateTime(dateStr, timeStr) {
             const [hours, minutes] = timeStr.split(':').map(Number);
             const date = new Date(dateStr);
@@ -329,7 +409,7 @@
             return date;
         }
 
-        // 改进的加班费计算逻辑
+        // 加班费计算
         function calculateOvertime() {
             const start = document.getElementById('start-time').value;
             const end = document.getElementById('end-time').value;
@@ -349,11 +429,9 @@
                 const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
                 const actualEnd = hourEnd > endTime ? endTime : hourEnd;
                 
-                // 判断是否为周末（周六=6，周日=0）
                 const isWeekend = [0, 6].includes(hourStart.getDay());
                 const rate = isWeekend ? 25 : 20;
                 
-                // 计算有效加班时间（排除08:00-17:00的工作时间）
                 let effectiveHours = 0;
                 if (!isWeekend) {
                     const workStart = new Date(hourStart);
@@ -392,7 +470,7 @@
             };
         }
 
-        // 同步表单数据显示
+        // 数据同步
         function syncFormData() {
             document.getElementById('show-driver').textContent = document.getElementById('driver').value;
             document.getElementById('show-date').textContent = document.getElementById('date').value;
@@ -403,7 +481,6 @@
             document.getElementById('show-odo').textContent = 
                 `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
 
-            // 费用显示控制
             const controlItem = (value, itemId, showId) => {
                 const element = document.getElementById(itemId);
                 const showElement = document.getElementById(showId);
@@ -430,7 +507,6 @@
             const taxi = +document.getElementById('taxi').value || 0;
             controlItem(taxi, 'taxi-item', 'show-taxi');
 
-            // 加班费显示
             const overtime = calculateOvertime();
             const overtimeSection = document.getElementById('overtime-section');
             if (overtime.total > 0) {
@@ -449,7 +525,6 @@
                 overtimeSection.style.display = "none";
             }
 
-            // 总费用计算
             const totalCost = fuel + parking + carWash + maintenance + taxi + overtime.total;
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
@@ -481,7 +556,7 @@
             ].join("|");
         }
 
-        // 生成并分享记录
+        // 生成记录
         async function generateAndShare() {
             const startKm = +document.getElementById("start-km").value;
             const endKm = +document.getElementById("end-km").value;
@@ -518,15 +593,13 @@
 
             await new Promise(resolve => setTimeout(resolve, 300));
 
-            const exportContainer = document.getElementById("export-container");
-            exportContainer.style.display = "flex";
-            
             try {
+                const exportContainer = document.getElementById("export-container");
+                exportContainer.style.display = "flex";
                 const canvas = await html2canvas(exportContainer, {
                     useCORS: true,
                     scale: 2
                 });
-
                 exportContainer.style.display = "none";
 
                 if (generatedImageElement) generatedImageElement.remove();
@@ -539,13 +612,33 @@
                 link.download = `Driving_Record_${Date.now()}.png`;
                 link.href = generatedImageElement.src;
                 link.click();
+
+                localStorage.removeItem(`draft_${currentDriver}`);
+                currentDriver = null;
+                localStorage.removeItem('lastDriver');
+                clearForm();
             } catch (err) {
                 alert("Generation failed, please try again");
                 exportContainer.style.display = "none";
             }
         }
 
-        // 实时更新显示
+        // 其他事件监听
+        document.getElementById('plate').addEventListener('change', function() {
+            if (this.value === 'Other') {
+                const manualPlate = prompt('Enter license plate:');
+                if (manualPlate) {
+                    const newOption = document.createElement('option');
+                    newOption.value = manualPlate;
+                    newOption.textContent = manualPlate;
+                    this.appendChild(newOption);
+                    this.value = manualPlate;
+                    saveDraft();
+                }
+            }
+        });
+
+        // 输入事件监听
         document.getElementById('start-time').addEventListener('change', syncFormData);
         document.getElementById('end-time').addEventListener('change', syncFormData);
         document.getElementById('date').addEventListener('change', syncFormData);
