@@ -641,9 +641,19 @@
         }
 
         function buildDataString() {
-            const overtime = calculateOvertime();
-            return [
-                `driver:${document.getElementById("driver").value}`,
+    const date = document.getElementById("date").value.replace(/-/g, "");
+    const startTime = document.getElementById("start-time").value.replace(":", "");
+    const endTime = document.getElementById("end-time").value.replace(":", "");
+    return [
+        "PL:" + document.getElementById("plate").value,
+        "DR:" + document.getElementById("driver").value,
+        "DT:" + date,
+        "ST:" + startTime,
+        "ET:" + endTime,
+        "SK:" + document.getElementById("start-km").value,
+        "EK:" + document.getElementById("end-km").value
+    ].join("");
+}`,
                 `plate:${document.getElementById("plate").value}`,
                 `date:${document.getElementById("date").value}`,
                 `start_time:${document.getElementById("start-time").value}`,
