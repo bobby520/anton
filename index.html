@@ -31,12 +31,18 @@
         }
         .form-group { 
             margin-bottom: 12px; 
+            position: relative;
         }
         label { 
             display: block; 
             margin-bottom: 4px; 
             font-weight: bold; 
             color: #444;
+        }
+        label::after {
+            content: " *";
+            color: red;
+            font-size: 0.8em;
         }
         input, select, button { 
             width: 100%; 
@@ -45,6 +51,10 @@
             border: 1px solid #ddd; 
             border-radius: 3px; 
             box-sizing: border-box;
+        }
+        input:invalid, select:invalid {
+            border-color: #ff4444;
+            background-color: #ffeeee;
         }
         button { 
             background-color: #1AAD19;
@@ -125,29 +135,16 @@
             margin: 5px 0;
             font-size: 0.85em;
         }
-        .draft-notice {
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            margin: 10px 0;
-            display: none;
-        }
-        .error-toast {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #ff4444;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 5px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-            z-index: 9999;
-            animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from { top: -50px; }
-            to { top: 20px; }
+        .error-message {
+            color: #ff4444;
+            font-size: 0.8em;
+            position: absolute;
+            bottom: -2px;
+            right: 0;
+            background: white;
+            padding: 0 3px;
+            display: block !important;
+            opacity: 1 !important;
         }
         @media (max-width: 480px) {
             .form-group input {
@@ -166,7 +163,6 @@
              alt="Company Logo">
         <h2>Anton Oilfield Services DMCC Driving System</h2>
     </div>
-    <div class="draft-notice" id="draft-notice">已加载自动保存的草稿 ✎</div>
 
     <div class="form-section">
         <div class="form-group">
@@ -177,11 +173,13 @@
                 <option value="Yusuf">Yusuf</option>
                 <option value="Malik">Malik</option>
             </select>
+            <div class="error-message" id="driver-error"></div>
         </div>
 
         <div class="form-group">
             <label>Date:</label>
             <input type="date" id="date" required>
+            <div class="error-message" id="date-error"></div>
         </div>
 
         <div class="form-group">
@@ -194,59 +192,70 @@
                 <option value="T71027">T71027</option>
                 <option value="Other">Other (Manual Input)</option>
             </select>
+            <div class="error-message" id="plate-error"></div>
         </div>
 
         <div class="form-group">
             <label>Booked by:</label>
             <input type="text" id="name" placeholder="e.g., Mr. Zhang" required>
+            <div class="error-message" id="name-error"></div>
         </div>
 
         <div class="form-group">
             <label>Start Time:</label>
             <input type="time" id="start-time" required>
+            <div class="error-message" id="start-time-error"></div>
         </div>
 
         <div class="form-group">
             <label>Start Odometer (KM):</label>
             <input type="number" id="start-km" placeholder="e.g., 49332" min="0" required>
+            <div class="error-message" id="start-km-error"></div>
         </div>
 
         <div class="form-group">
             <label>End Time:</label>
             <input type="time" id="end-time" required>
+            <div class="error-message" id="end-time-error"></div>
         </div>
 
         <div class="form-group">
             <label>End Odometer (KM):</label>
             <input type="number" id="end-km" placeholder="e.g., 49348" min="0" required>
+            <div class="error-message" id="end-km-error"></div>
         </div>
 
         <div class="form-group">
             <label>Fuel Cost (AED):</label>
             <input type="number" id="fuel" min="0" step="5" required>
+            <div class="error-message" id="fuel-error"></div>
         </div>
 
         <div class="form-group">
             <label>Parking Fee (AED):</label>
             <input type="number" id="parking" min="0" step="5" required>
+            <div class="error-message" id="parking-error"></div>
         </div>
 
         <div class="form-group">
             <label>Car Wash Fee (AED):</label>
             <input type="number" id="car-wash" min="0" step="5" required>
+            <div class="error-message" id="car-wash-error"></div>
         </div>
 
         <div class="form-group">
             <label>Maintenance Fee (AED):</label>
             <input type="number" id="maintenance" min="0" step="5" required>
+            <div class="error-message" id="maintenance-error"></div>
         </div>
 
         <div class="form-group">
             <label>Taxi Fare (AED):</label>
             <input type="number" id="taxi" min="0" step="5" required>
+            <div class="error-message" id="taxi-error"></div>
         </div>
 
-        <button onclick="generateAndShare()">Generate QR Code</button>
+        <button onclick="validateAndGenerate()">Generate QR Code</button>
     </div>
 
     <div id="export-container">
@@ -323,10 +332,7 @@
 
     <script>
         let generatedImageElement = null;
-        let currentDriver = null;
-        const formFields = ['driver', 'date', 'plate', 'name', 'start-time', 
-                          'start-km', 'end-time', 'end-km', 'fuel', 'parking',
-                          'car-wash', 'maintenance', 'taxi'];
+        const DRAFT_PREFIX = 'driverDraft_';
 
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
@@ -334,86 +340,216 @@
             const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
             dateInput.value = localDate.toISOString().substring(0, 10);
 
+            document.getElementById('driver').addEventListener('change', function() {
+                const driver = this.value;
+                if (driver) {
+                    loadDraft(driver);
+                    clearAllErrors();
+                }
+            });
+
+            document.getElementById('plate').addEventListener('change', function() {
+                if (this.value === 'Other') {
+                    const manualPlate = prompt('Enter license plate:');
+                    if (manualPlate) {
+                        const newOption = document.createElement('option');
+                        newOption.value = manualPlate;
+                        newOption.textContent = manualPlate;
+                        this.appendChild(newOption);
+                        this.value = manualPlate;
+                    }
+                }
+                saveDraft();
+            });
+
+            const autoSaveFields = [
+                'date', 'name', 'start-time', 'start-km',
+                'end-time', 'end-km', 'fuel', 'parking', 
+                'car-wash', 'maintenance', 'taxi'
+            ];
+            autoSaveFields.forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    if (document.getElementById('driver').value) {
+                        saveDraft();
+                    }
+                });
+            });
+
             const lastDriver = localStorage.getItem('lastDriver');
             if (lastDriver) {
                 document.getElementById('driver').value = lastDriver;
-                currentDriver = lastDriver;
                 loadDraft(lastDriver);
             }
-
-            formFields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.addEventListener('input', saveDraft);
-                    element.addEventListener('change', saveDraft);
-                }
-            });
-
-            document.getElementById('driver').addEventListener('change', function(e) {
-                if (currentDriver) saveDraft();
-                currentDriver = e.target.value;
-                localStorage.setItem('lastDriver', currentDriver);
-                loadDraft(currentDriver);
-            });
         });
 
-        function saveDraft() {
-            if (!currentDriver) return;
-            
-            const draftData = {};
-            formFields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    if (id === 'plate' && element.value === 'Other') {
-                        const manualPlate = element.options[element.selectedIndex].text;
-                        draftData[id] = manualPlate;
-                    } else {
-                        draftData[id] = element.value;
-                    }
+        function validateForm() {
+            clearAllErrors();
+            let isValid = true;
+
+            const driver = document.getElementById('driver').value;
+            const date = document.getElementById('date').value;
+            const plate = document.getElementById('plate').value;
+            const name = document.getElementById('name').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
+            const startKm = document.getElementById('start-km').value;
+            const endKm = document.getElementById('end-km').value;
+            const fuel = document.getElementById('fuel').value;
+            const parking = document.getElementById('parking').value;
+            const carWash = document.getElementById('car-wash').value;
+            const maintenance = document.getElementById('maintenance').value;
+            const taxi = document.getElementById('taxi').value;
+
+            if (!driver) {
+                showError('driver-error', 'Please select driver');
+                isValid = false;
+            }
+            if (!date) {
+                showError('date-error', 'Date is required');
+                isValid = false;
+            }
+            if (!plate) {
+                showError('plate-error', 'License plate is required');
+                isValid = false;
+            }
+            if (!name) {
+                showError('name-error', 'Booked by is required');
+                isValid = false;
+            }
+            if (!startTime) {
+                showError('start-time-error', 'Start time is required');
+                isValid = false;
+            }
+            if (!endTime) {
+                showError('end-time-error', 'End time is required');
+                isValid = false;
+            }
+            if (!startKm) {
+                showError('start-km-error', 'Start odometer is required');
+                isValid = false;
+            }
+            if (!endKm) {
+                showError('end-km-error', 'End odometer is required');
+                isValid = false;
+            }
+
+            if (parseFloat(endKm) <= parseFloat(startKm)) {
+                showError('end-km-error', 'End km must > Start km');
+                isValid = false;
+            }
+            if (parseFloat(fuel) < 0) {
+                showError('fuel-error', 'Cannot be negative');
+                isValid = false;
+            }
+            if (parseFloat(parking) < 0) {
+                showError('parking-error', 'Cannot be negative');
+                isValid = false;
+            }
+            if (parseFloat(carWash) < 0) {
+                showError('car-wash-error', 'Cannot be negative');
+                isValid = false;
+            }
+            if (parseFloat(maintenance) < 0) {
+                showError('maintenance-error', 'Cannot be negative');
+                isValid = false;
+            }
+            if (parseFloat(taxi) < 0) {
+                showError('taxi-error', 'Cannot be negative');
+                isValid = false;
+            }
+
+            if (startTime && endTime) {
+                const start = parseDateTime(date, startTime);
+                const end = parseDateTime(date, endTime);
+                if (end < start) {
+                    showError('end-time-error', 'End time cannot be earlier');
+                    isValid = false;
                 }
-            });
+            }
+
+            return isValid;
+        }
+
+        async function validateAndGenerate() {
+            if (!validateForm()) return;
+            try {
+                await generateAndShare();
+            } catch (error) {
+                console.error('生成失败:', error);
+                alert("生成失败，请检查控制台日志");
+            }
+        }
+
+        function saveDraft() {
+            const driver = document.getElementById('driver').value;
+            if (!driver) return;
             
-            localStorage.setItem(`draft_${currentDriver}`, JSON.stringify(draftData));
+            localStorage.setItem('lastDriver', driver);
+            const formData = {
+                driver: driver,
+                date: document.getElementById('date').value,
+                plate: document.getElementById('plate').value,
+                name: document.getElementById('name').value,
+                startTime: document.getElementById('start-time').value,
+                startKm: document.getElementById('start-km').value,
+                endTime: document.getElementById('end-time').value,
+                endKm: document.getElementById('end-km').value,
+                fuel: document.getElementById('fuel').value,
+                parking: document.getElementById('parking').value,
+                carWash: document.getElementById('car-wash').value,
+                maintenance: document.getElementById('maintenance').value,
+                taxi: document.getElementById('taxi').value
+            };
+            localStorage.setItem(DRAFT_PREFIX + driver, JSON.stringify(formData));
         }
 
         function loadDraft(driver) {
-            const draft = JSON.parse(localStorage.getItem(`draft_${driver}`));
-            if (!draft) return clearForm();
+            const draft = localStorage.getItem(DRAFT_PREFIX + driver);
+            if (!draft) return;
 
-            formFields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element && draft[id]) {
-                    if (id === 'plate') {
-                        handlePlateLoading(element, draft[id]);
-                    } else {
-                        element.value = draft[id];
-                    }
-                }
-            });
+            const formData = JSON.parse(draft);
+            const plateSelect = document.getElementById('plate');
+            if (!Array.from(plateSelect.options).some(opt => opt.value === formData.plate)) {
+                const newOption = document.createElement('option');
+                newOption.value = formData.plate;
+                newOption.textContent = formData.plate;
+                plateSelect.appendChild(newOption);
+            }
 
-            document.getElementById('draft-notice').style.display = 'block';
-            setTimeout(() => {
-                document.getElementById('draft-notice').style.display = 'none';
-            }, 3000);
+            document.getElementById('date').value = formData.date || '';
+            document.getElementById('plate').value = formData.plate || '';
+            document.getElementById('name').value = formData.name || '';
+            document.getElementById('start-time').value = formData.startTime || '';
+            document.getElementById('start-km').value = formData.startKm || '';
+            document.getElementById('end-time').value = formData.endTime || '';
+            document.getElementById('end-km').value = formData.endKm || '';
+            document.getElementById('fuel').value = formData.fuel || '';
+            document.getElementById('parking').value = formData.parking || '';
+            document.getElementById('car-wash').value = formData.carWash || '';
+            document.getElementById('maintenance').value = formData.maintenance || '';
+            document.getElementById('taxi').value = formData.taxi || '';
+            
             syncFormData();
         }
 
-        function handlePlateLoading(selectElement, value) {
-            const options = Array.from(selectElement.options);
-            const exists = options.some(opt => opt.value === value || opt.text === value);
-            if (!exists && value !== 'Other') {
-                const newOption = new Option(value, value);
-                selectElement.appendChild(newOption);
+        function clearDraft() {
+            const driver = document.getElementById('driver').value;
+            if (driver) {
+                localStorage.removeItem(DRAFT_PREFIX + driver);
             }
-            selectElement.value = value;
         }
 
-        function clearForm() {
-            formFields.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) element.value = '';
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.style.display = 'block';
+        }
+
+        function clearAllErrors() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.textContent = '';
+                el.style.display = 'none';
             });
-            document.getElementById('date').value = new Date().toISOString().split('T')[0];
         }
 
         function parseDateTime(dateStr, timeStr) {
@@ -541,128 +677,91 @@
             document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
         }
 
-        // 修改后的 buildDataString()：压缩字段名，同时生成 JSON 字符串
         function buildDataString() {
             const overtime = calculateOvertime();
-            const data = {
-                d: document.getElementById("driver").value,
-                pl: document.getElementById("plate").value,
-                dt: document.getElementById("date").value,
-                st: document.getElementById("start-time").value,
-                et: document.getElementById("end-time").value,
-                bk: document.getElementById("name").value,
-                sk: document.getElementById("start-km").value,
-                ek: document.getElementById("end-km").value,
-                f: document.getElementById("fuel").value,
-                p: document.getElementById("parking").value,
-                cw: document.getElementById("car-wash").value,
-                m: document.getElementById("maintenance").value,
-                tx: document.getElementById("taxi").value,
-                ot: overtime.total.toFixed(2),
-                tt: (
-                    +document.getElementById("fuel").value + 
-                    +document.getElementById("parking").value + 
-                    +document.getElementById("car-wash").value +
-                    +document.getElementById("maintenance").value +
-                    +document.getElementById("taxi").value + 
-                    overtime.total
-                ).toFixed(2)
-            };
-            return JSON.stringify(data);
-        }
-
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-toast';
-            errorDiv.textContent = message;
-            document.body.appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 3000);
+            return [
+                `driver:${document.getElementById("driver").value}`,
+                `plate:${document.getElementById("plate").value}`,
+                `date:${document.getElementById("date").value}`,
+                `start_time:${document.getElementById("start-time").value}`,
+                `end_time:${document.getElementById("end-time").value}`,
+                `booker:${document.getElementById("name").value}`,
+                `start_km:${document.getElementById("start-km").value}`,
+                `end_km:${document.getElementById("end-km").value}`,
+                `fuel_cost:${document.getElementById("fuel").value}`,
+                `parking_fee:${document.getElementById("parking").value}`,
+                `car_wash:${document.getElementById("car-wash").value}`,
+                `maintenance:${document.getElementById("maintenance").value}`,
+                `taxi_fare:${document.getElementById("taxi").value}`,
+                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}`,
+                `total_cost:${(+document.getElementById("fuel").value + 
+                              +document.getElementById("parking").value + 
+                              +document.getElementById("car-wash").value +
+                              +document.getElementById("maintenance").value +
+                              +document.getElementById("taxi").value + 
+                              overtime.total).toFixed(2)}`
+            ].join("|");
         }
 
         async function generateAndShare() {
-            try {
-                const startKm = +document.getElementById("start-km").value;
-                const endKm = +document.getElementById("end-km").value;
-                if (endKm <= startKm) {
-                    throw new Error("结束里程必须大于开始里程！");
+            const qrcodeDiv = document.getElementById("qrcode-section");
+            qrcodeDiv.innerHTML = "";
+            
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            new QRCode(qrcodeDiv, {
+                text: buildDataString(),
+                width: 150,
+                height: 150,
+                colorDark: "#2c3e50",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const exportContainer = document.getElementById("export-container");
+            exportContainer.style.display = "flex";
+            
+            let canvas;
+            let retry = 0;
+            while (retry < 3) {
+                try {
+                    canvas = await html2canvas(exportContainer, {
+                        useCORS: true,
+                        scale: 2,
+                        logging: true,
+                        allowTaint: true
+                    });
+                    break;
+                } catch (err) {
+                    retry++;
+                    await new Promise(r => setTimeout(r, 300));
                 }
-
-                const costItems = ['fuel', 'parking', 'car-wash', 'maintenance', 'taxi'];
-                for (const id of costItems) {
-                    const value = +document.getElementById(id).value;
-                    if (value < 0) {
-                        throw new Error("费用不能为负数！");
-                    }
-                }
-
-                syncFormData();
-
-                const qrcodeDiv = document.getElementById("qrcode-section");
-                qrcodeDiv.innerHTML = "";
-                
-                await new Promise(resolve => requestAnimationFrame(resolve));
-                
-                new QRCode(qrcodeDiv, {
-                    text: buildDataString(),
-                    width: 150,
-                    height: 150,
-                    colorDark: "#2c3e50",
-                    colorLight: "#ffffff",
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-
-                await new Promise(resolve => setTimeout(resolve, 500));
-
-                const exportContainer = document.getElementById("export-container");
-                exportContainer.style.display = "flex";
-                const canvas = await html2canvas(exportContainer, {
-                    useCORS: true,
-                    allowTaint: true,
-                    scale: 2,
-                    logging: true
-                });
-                exportContainer.style.display = "none";
-
-                if (generatedImageElement) generatedImageElement.remove();
-                generatedImageElement = document.createElement('img');
-                generatedImageElement.src = canvas.toDataURL();
-                generatedImageElement.id = 'generated-image';
-                document.body.appendChild(generatedImageElement);
-
-                if (/MicroMessenger/i.test(navigator.userAgent)) {
-                    showError("请长按图片保存到手机");
-                    generatedImageElement.style.display = 'block';
-                } else {
-                    const link = document.createElement('a');
-                    link.download = `Driving_Record_${Date.now()}.png`;
-                    link.href = generatedImageElement.src;
-                    link.click();
-                }
-
-                localStorage.removeItem(`draft_${currentDriver}`);
-                currentDriver = null;
-                localStorage.removeItem('lastDriver');
-                clearForm();
-
-            } catch (err) {
-                showError(err.message);
-                console.error("生成失败:", err);
             }
+
+            if (!canvas) throw new Error('无法生成截图');
+
+            if (generatedImageElement) generatedImageElement.remove();
+            generatedImageElement = document.createElement('img');
+            generatedImageElement.src = canvas.toDataURL();
+            generatedImageElement.id = 'generated-image';
+            document.body.appendChild(generatedImageElement);
+
+            const link = document.createElement('a');
+            link.download = `Driving_Record_${Date.now()}.png`;
+            link.href = generatedImageElement.src;
+            
+            if (navigator.userAgent.toLowerCase().includes('micromessenger')) {
+                const newWindow = window.open();
+                newWindow.document.write(`<img src="${link.href}" style="max-width:100%" />`);
+            } else {
+                link.click();
+            }
+
+            clearDraft();
+            exportContainer.style.display = "none";
         }
-
-        document.getElementById('plate').addEventListener('change', function() {
-            if (this.value === 'Other') {
-                const manualPlate = prompt('Enter license plate:');
-                if (manualPlate) {
-                    const newOption = document.createElement('option');
-                    newOption.value = manualPlate;
-                    newOption.textContent = manualPlate;
-                    this.appendChild(newOption);
-                    this.value = manualPlate;
-                    saveDraft();
-                }
-            }
-        });
 
         document.getElementById('start-time').addEventListener('change', syncFormData);
         document.getElementById('end-time').addEventListener('change', syncFormData);
