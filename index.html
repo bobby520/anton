@@ -334,6 +334,13 @@
         let generatedImageElement = null;
         const DRAFT_PREFIX = 'driverDraft_';
 
+        // 创建日期对象（处理跨天）
+        function createDate(dateStr, timeStr) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return new Date(year, month-1, day, hours, minutes);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('date');
             const now = new Date();
@@ -400,70 +407,38 @@
             const maintenance = document.getElementById('maintenance').value;
             const taxi = document.getElementById('taxi').value;
 
-            if (!driver) {
-                showError('driver-error', 'Please select driver');
-                isValid = false;
-            }
-            if (!date) {
-                showError('date-error', 'Date is required');
-                isValid = false;
-            }
-            if (!plate) {
-                showError('plate-error', 'License plate is required');
-                isValid = false;
-            }
-            if (!name) {
-                showError('name-error', 'Booked by is required');
-                isValid = false;
-            }
-            if (!startTime) {
-                showError('start-time-error', 'Start time is required');
-                isValid = false;
-            }
-            if (!endTime) {
-                showError('end-time-error', 'End time is required');
-                isValid = false;
-            }
-            if (!startKm) {
-                showError('start-km-error', 'Start odometer is required');
-                isValid = false;
-            }
-            if (!endKm) {
-                showError('end-km-error', 'End odometer is required');
-                isValid = false;
-            }
+            if (!driver) showError('driver-error', 'Please select driver', isValid=false);
+            if (!date) showError('date-error', 'Date is required', isValid=false);
+            if (!plate) showError('plate-error', 'License plate is required', isValid=false);
+            if (!name) showError('name-error', 'Booked by is required', isValid=false);
+            if (!startTime) showError('start-time-error', 'Start time is required', isValid=false);
+            if (!endTime) showError('end-time-error', 'End time is required', isValid=false);
+            if (!startKm) showError('start-km-error', 'Start odometer is required', isValid=false);
+            if (!endKm) showError('end-km-error', 'End odometer is required', isValid=false);
 
-            if (parseFloat(endKm) <= parseFloat(startKm)) {
-                showError('end-km-error', 'End km must > Start km');
-                isValid = false;
+            if (endKm && startKm && parseFloat(endKm) <= parseFloat(startKm)) {
+                showError('end-km-error', 'End km must > Start km', isValid=false);
             }
-            if (parseFloat(fuel) < 0) {
-                showError('fuel-error', 'Cannot be negative');
-                isValid = false;
-            }
-            if (parseFloat(parking) < 0) {
-                showError('parking-error', 'Cannot be negative');
-                isValid = false;
-            }
-            if (parseFloat(carWash) < 0) {
-                showError('car-wash-error', 'Cannot be negative');
-                isValid = false;
-            }
-            if (parseFloat(maintenance) < 0) {
-                showError('maintenance-error', 'Cannot be negative');
-                isValid = false;
-            }
-            if (parseFloat(taxi) < 0) {
-                showError('taxi-error', 'Cannot be negative');
-                isValid = false;
-            }
+            [fuel, parking, carWash, maintenance, taxi].forEach((v,i) => {
+                if (parseFloat(v) < 0) showError(
+                    ['fuel-error','parking-error','car-wash-error','maintenance-error','taxi-error'][i],
+                    'Cannot be negative',
+                    isValid=false
+                );
+            });
 
-            if (startTime && endTime) {
-                const start = parseDateTime(date, startTime);
-                const end = parseDateTime(date, endTime);
-                if (end < start) {
-                    showError('end-time-error', 'End time cannot be earlier');
-                    isValid = false;
+            // 修复跨天时间验证
+            if (startTime && endTime && date) {
+                const startDate = createDate(date, startTime);
+                let endDate = createDate(date, endTime);
+                
+                // 自动处理跨天
+                if (endDate < startDate) {
+                    endDate = new Date(endDate.getTime() + 86400000); // +1天
+                }
+
+                if (endDate < startDate) {
+                    showError('end-time-error', 'End time cannot be earlier', isValid=false);
                 }
             }
 
@@ -552,31 +527,25 @@
             });
         }
 
-        function parseDateTime(dateStr, timeStr) {
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            const date = new Date(dateStr);
-            date.setHours(hours, minutes, 0, 0);
-            return date;
-        }
-
         function calculateOvertime() {
-            const start = document.getElementById('start-time').value;
-            const end = document.getElementById('end-time').value;
-            const dateInput = document.getElementById('date').value;
+            const date = document.getElementById('date').value;
+            const startTime = document.getElementById('start-time').value;
+            const endTime = document.getElementById('end-time').value;
             
-            if (!start || !end || !dateInput) return { total: 0, breakdown: [] };
+            if (!date || !startTime || !endTime) return { total: 0, breakdown: [] };
 
-            let current = parseDateTime(dateInput, start);
-            const endTime = parseDateTime(dateInput, end);
-            if (endTime < current) endTime.setDate(endTime.getDate() + 1);
+            let current = createDate(date, startTime);
+            let endDate = createDate(date, endTime);
+            
+            if (endDate < current) endDate.setDate(endDate.getDate() + 1);
 
             const results = [];
             let total = 0;
 
-            while (current < endTime) {
+            while (current < endDate) {
                 const hourStart = new Date(current);
-                const hourEnd = new Date(hourStart.getTime() + 60 * 60 * 1000);
-                const actualEnd = hourEnd > endTime ? endTime : hourEnd;
+                const hourEnd = new Date(hourStart.getTime() + 3600000);
+                const actualEnd = hourEnd > endDate ? endDate : hourEnd;
                 
                 const isWeekend = [0, 6].includes(hourStart.getDay());
                 const rate = isWeekend ? 25 : 20;
@@ -591,9 +560,7 @@
                     const overlapStart = hourStart < workStart ? workStart : hourStart;
                     const overlapEnd = actualEnd > workEnd ? workEnd : actualEnd;
                     
-                    if (overlapStart < overlapEnd) {
-                        effectiveHours = (overlapEnd - overlapStart) / 3600000;
-                    }
+                    effectiveHours = (overlapEnd - overlapStart) / 3600000;
                 } else {
                     effectiveHours = (actualEnd - hourStart) / 3600000;
                 }
@@ -609,14 +576,10 @@
                     });
                     total += amount;
                 }
-
                 current = hourEnd;
             }
 
-            return {
-                total: +total.toFixed(2),
-                breakdown: results
-            };
+            return { total: +total.toFixed(2), breakdown: results };
         }
 
         function syncFormData() {
@@ -740,7 +703,7 @@
                 }
             }
 
-            if (!canvas) throw new Error('无法生成截图');
+            if (!canvas) throw new Error('生成截图失败');
 
             if (generatedImageElement) generatedImageElement.remove();
             generatedImageElement = document.createElement('img');
