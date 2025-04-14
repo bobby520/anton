@@ -5,6 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anton Oilfield Services DMCC - Driving Record</title>
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+function validateForm() {
+    clearAllErrors();
+    let isValid = true;
+
+    const driver = document.getElementById('driver').value;
+    const date = document.getElementById('date').value;
+    const plate = document.getElementById('plate').value;
+    const name = document.getElementById('name').value;
+    const startTime = document.getElementById('start-time').value;
+    const endTime = document.getElementById('end-time').value;
+    const startKm = document.getElementById('start-km').value;
+    const endKm = document.getElementById('end-km').value;
+    const fuel = document.getElementById('fuel').value;
+    const parking = document.getElementById('parking').value;
+    const carWash = document.getElementById('car-wash').value;
+    const maintenance = document.getElementById('maintenance').value;
+    const taxi = document.getElementById('taxi').value;
+
+    if (!driver) showError('driver-error', 'Please select driver', isValid=false);
+    if (!date) showError('date-error', 'Date is required', isValid=false);
+    if (!plate) showError('plate-error', 'License plate is required', isValid=false);
+    if (!name) showError('name-error', 'Booked by is required', isValid=false);
+    if (!startTime) showError('start-time-error', 'Start time is required', isValid=false);
+    if (!endTime) showError('end-time-error', 'End time is required', isValid=false);
+    if (!startKm) showError('start-km-error', 'Start odometer is required', isValid=false);
+    if (!endKm) showError('end-km-error', 'End odometer is required', isValid=false);
+
+    if (endKm && startKm && parseFloat(endKm) <= parseFloat(startKm)) {
+        showError('end-km-error', 'End km must > Start km', isValid=false);
+    }
+
+    [fuel, parking, carWash, maintenance, taxi].forEach((v,i) => {
+        if (parseFloat(v) < 0) showError(
+            ['fuel-error','parking-error','car-wash-error','maintenance-error','taxi-error'][i],
+            'Cannot be negative',
+            isValid=false
+        );
+    });
+
+    return isValid;
+}
+
+function validateAndGenerate() {
+    if (!validateForm()) return;
+    try {
+        generateAndShare();
+    } catch (error) {
+        console.error('生成失败:', error);
+        alert("生成失败，请检查控制台日志");
+    }
+}
+</script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         body { 
@@ -641,18 +694,17 @@
         }
 
         function buildDataString() {
-    const date = document.getElementById("date").value.replace(/-/g, "");
-    const startTime = document.getElementById("start-time").value.replace(":", "");
-    const endTime = document.getElementById("end-time").value.replace(":", "");
-    return [
-        "PL:" + document.getElementById("plate").value,
-        "DR:" + document.getElementById("driver").value,
-        "DT:" + date,
-        "ST:" + startTime,
-        "ET:" + endTime,
-        "SK:" + document.getElementById("start-km").value,
-        "EK:" + document.getElementById("end-km").value
-    ].join("");
+    const plate = document.getElementById("plate").value || "";
+    const driver = document.getElementById("driver").value || "";
+    const date = (document.getElementById("date").value || "").replace(/-/g, "");
+    const startTime = (document.getElementById("start-time").value || "").replace(":", "");
+    const endTime = (document.getElementById("end-time").value || "").replace(":", "");
+    const startKm = document.getElementById("start-km").value || "";
+    const endKm = document.getElementById("end-km").value || "";
+
+    const qrText = "PL:" + plate + "DR:" + driver + "DT:" + date + "ST:" + startTime + "ET:" + endTime + "SK:" + startKm + "EK:" + endKm;
+    console.log("🔍 QR Text to generate:", qrText);  // ✅ 控制台输出便于调试
+    return qrText;
 }`,
                 `plate:${document.getElementById("plate").value}`,
                 `date:${document.getElementById("date").value}`,
@@ -677,19 +729,59 @@
         }
 
         async function generateAndShare() {
-            const qrcodeDiv = document.getElementById("qrcode-section");
-            qrcodeDiv.innerHTML = "";
-            
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            new QRCode(qrcodeDiv, {
-                text: buildDataString(),
-                width: 150,
-                height: 150,
-                colorDark: "#2c3e50",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
+    const qrcodeDiv = document.getElementById("qrcode-section");
+    qrcodeDiv.innerHTML = "";
+    
+    try {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        new QRCode(qrcodeDiv, {
+            text: buildDataString(),
+            width: 150,
+            height: 150,
+            colorDark: "#2c3e50",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const exportContainer = document.getElementById("export-container");
+        exportContainer.style.display = "flex";
+        
+        const canvas = await html2canvas(exportContainer, {
+            useCORS: true,
+            scale: 2,
+            logging: true,
+            allowTaint: true
+        });
+
+        if (!canvas) throw new Error('截图失败');
+
+        if (generatedImageElement) generatedImageElement.remove();
+        generatedImageElement = document.createElement('img');
+        generatedImageElement.src = canvas.toDataURL();
+        generatedImageElement.id = 'generated-image';
+        document.body.appendChild(generatedImageElement);
+
+        const link = document.createElement('a');
+        link.download = `Driving_Record_${Date.now()}.png`;
+        link.href = generatedImageElement.src;
+
+        if (navigator.userAgent.toLowerCase().includes('micromessenger')) {
+            const newWindow = window.open();
+            newWindow.document.write(`<img src="${link.href}" style="max-width:100%" />`);
+        } else {
+            link.click();
+        }
+
+        clearDraft();
+        exportContainer.style.display = "none";
+    } catch (error) {
+        console.error("❌ QR Code or Screenshot generation failed:", error);
+        alert("生成失败，请检查控制台日志");
+    }
+});
 
             await new Promise(resolve => setTimeout(resolve, 500));
 
