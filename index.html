@@ -1,841 +1,176 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anton Oilfield Services DMCC - Driving Record</title>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-<script>
-function validateForm() {
-    clearAllErrors();
-    let isValid = true;
-
-    const driver = document.getElementById('driver').value;
-    const date = document.getElementById('date').value;
-    const plate = document.getElementById('plate').value;
-    const name = document.getElementById('name').value;
-    const startTime = document.getElementById('start-time').value;
-    const endTime = document.getElementById('end-time').value;
-    const startKm = document.getElementById('start-km').value;
-    const endKm = document.getElementById('end-km').value;
-    const fuel = document.getElementById('fuel').value;
-    const parking = document.getElementById('parking').value;
-    const carWash = document.getElementById('car-wash').value;
-    const maintenance = document.getElementById('maintenance').value;
-    const taxi = document.getElementById('taxi').value;
-
-    if (!driver) showError('driver-error', 'Please select driver', isValid=false);
-    if (!date) showError('date-error', 'Date is required', isValid=false);
-    if (!plate) showError('plate-error', 'License plate is required', isValid=false);
-    if (!name) showError('name-error', 'Booked by is required', isValid=false);
-    if (!startTime) showError('start-time-error', 'Start time is required', isValid=false);
-    if (!endTime) showError('end-time-error', 'End time is required', isValid=false);
-    if (!startKm) showError('start-km-error', 'Start odometer is required', isValid=false);
-    if (!endKm) showError('end-km-error', 'End odometer is required', isValid=false);
-
-    if (endKm && startKm && parseFloat(endKm) <= parseFloat(startKm)) {
-        showError('end-km-error', 'End km must > Start km', isValid=false);
-    }
-
-    [fuel, parking, carWash, maintenance, taxi].forEach((v,i) => {
-        if (parseFloat(v) < 0) showError(
-            ['fuel-error','parking-error','car-wash-error','maintenance-error','taxi-error'][i],
-            'Cannot be negative',
-            isValid=false
-        );
-    });
-
-    return isValid;
-}
-
-function validateAndGenerate() {
-    if (!validateForm()) return;
-    try {
-        generateAndShare();
-    } catch (error) {
-        console.error('生成失败:', error);
-        alert("生成失败，请检查控制台日志");
-    }
-}
-</script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            max-width: 800px; 
-            margin: 20px auto; 
-            padding: 20px; 
-            background-color: #f5f5f5;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .company-logo {
-            height: 30px;
-            margin-bottom: 8px;
-        }
-        .form-section {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        .form-group { 
-            margin-bottom: 12px; 
-            position: relative;
-        }
-        label { 
-            display: block; 
-            margin-bottom: 4px; 
-            font-weight: bold; 
-            color: #444;
-        }
-        label::after {
-            content: " *";
-            color: red;
-            font-size: 0.8em;
-        }
-        input, select, button { 
-            width: 100%; 
-            padding: 8px; 
-            margin-bottom: 12px; 
-            border: 1px solid #ddd; 
-            border-radius: 3px; 
-            box-sizing: border-box;
-        }
-        input:invalid, select:invalid {
-            border-color: #ff4444;
-            background-color: #ffeeee;
-        }
-        button { 
-            background-color: #1AAD19;
-            color: white; 
-            border: none; 
-            cursor: pointer; 
-            padding: 10px 0;
-        }
-        #export-container {
-            display: none;
-            width: 360px;
-            margin: 15px auto;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            flex-direction: column;
-        }
-        .export-logo {
-            height: 30px;
-            margin: 0 auto 10px;
-            display: block;
-        }
-        .export-title {
-            text-align: center;
-            font-size: 1em;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-        }
-        #qrcode-section {
-            text-align: center;
-            margin-top: 15px;
-            padding: 10px;
-        }
-        #qrcode-section canvas {
-            width: 150px !important;
-            height: 150px !important;
-        }
-        #generated-image {
-            max-width: 360px;
-            margin: 20px auto;
-            display: block;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .summary-item {
-            margin: 8px 0;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 5px;
-            font-size: 0.9em;
-            display: block;
-        }
-        .summary-label {
-            color: #666;
-            font-weight: bold;
-            display: inline-block;
-            width: 100px;
-        }
-        .total-cost {
-            background: #e3f2fd !important;
-            font-weight: bold;
-            border: 1px solid #bbdefb;
-        }
-        .overtime-details {
-            background: #fff3e0;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            display: none;
-        }
-        .overtime-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 5px 0;
-            font-size: 0.85em;
-        }
-        .error-message {
-            color: #ff4444;
-            font-size: 0.8em;
-            position: absolute;
-            bottom: -2px;
-            right: 0;
-            background: white;
-            padding: 0 3px;
-            display: block !important;
-            opacity: 1 !important;
-        }
-        @media (max-width: 480px) {
-            .form-group input {
-                font-size: 14px;
-            }
-            .summary-label {
-                width: 90px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Invoice QR Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <style>
+    body { font-family: Arial; background: #f5f5f5; padding: 20px; max-width: 1000px; margin: auto; }
+    .header { text-align:center; padding: 20px; background: #fff; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .company-logo { height: 60px; margin-bottom: 10px; }
+    .invoice-group { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    .invoice-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
+    .qr-card { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: #fafafa; }
+    .qr-block { width: 180px; height: 180px; }
+    .summary { font-size: 14px; line-height: 1.5; }
+  </style>
 </head>
 <body>
-    <div class="header">
-        <img src="https://raw.githubusercontent.com/bobby520/car-log-form/main/company-logo.png"
-             class="company-logo" 
-             alt="Company Logo">
-        <h2>Anton Oilfield Services DMCC Driving System</h2>
-    </div>
-
-    <div class="form-section">
-        <div class="form-group">
-            <label>Driver Name:</label>
-            <select id="driver" required>
-                <option value="" disabled selected>Select Driver</option>
-                <option value="Mudassar">Mudassar</option>
-                <option value="Yusuf">Yusuf</option>
-                <option value="Malik">Malik</option>
-            </select>
-            <div class="error-message" id="driver-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Date:</label>
-            <input type="date" id="date" required>
-            <div class="error-message" id="date-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>License Plate:</label>
-            <select id="plate" required>
-                <option value="" disabled selected>Select Vehicle</option>
-                <option value="F24345">F24345</option>
-                <option value="N75133">N75132</option>
-                <option value="M92098">M92098</option>
-                <option value="T71027">T71027</option>
-                <option value="Other">Other (Manual Input)</option>
-            </select>
-            <div class="error-message" id="plate-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Booked by:</label>
-            <input type="text" id="name" placeholder="e.g., Mr. Zhang" required>
-            <div class="error-message" id="name-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Start Time:</label>
-            <input type="time" id="start-time" required>
-            <div class="error-message" id="start-time-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Start Odometer (KM):</label>
-            <input type="number" id="start-km" placeholder="e.g., 49332" min="0" required>
-            <div class="error-message" id="start-km-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>End Time:</label>
-            <input type="time" id="end-time" required>
-            <div class="error-message" id="end-time-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>End Odometer (KM):</label>
-            <input type="number" id="end-km" placeholder="e.g., 49348" min="0" required>
-            <div class="error-message" id="end-km-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Fuel Cost (AED):</label>
-            <input type="number" id="fuel" min="0" step="5" required>
-            <div class="error-message" id="fuel-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Parking Fee (AED):</label>
-            <input type="number" id="parking" min="0" step="5" required>
-            <div class="error-message" id="parking-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Car Wash Fee (AED):</label>
-            <input type="number" id="car-wash" min="0" step="5" required>
-            <div class="error-message" id="car-wash-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Maintenance Fee (AED):</label>
-            <input type="number" id="maintenance" min="0" step="5" required>
-            <div class="error-message" id="maintenance-error"></div>
-        </div>
-
-        <div class="form-group">
-            <label>Taxi Fare (AED):</label>
-            <input type="number" id="taxi" min="0" step="5" required>
-            <div class="error-message" id="taxi-error"></div>
-        </div>
-
-        <button onclick="validateAndGenerate()">Generate QR Code</button>
-    </div>
-
-    <div id="export-container">
-        <img src="https://raw.githubusercontent.com/bobby520/car-log-form/main/company-logo.png"
-             class="export-logo"
-             alt="Company Logo">
-        <div class="export-title">Driving Record Summary</div>
-        
-        <div id="summary-section">
-            <div class="summary-item">
-                <span class="summary-label">Driver:</span>
-                <span id="show-driver"></span>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">Date:</span>
-                <span id="show-date"></span>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">License Plate:</span>
-                <span id="show-plate"></span>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">Booked by:</span>
-                <span id="show-booker"></span>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">Start Time:</span>
-                <span id="show-start-time"></span>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">End Time:</span>
-                <span id="show-end-time"></span>
-            </div>
-            <div class="summary-item">
-                <span class="summary-label">Odometer:</span>
-                <span id="show-odo"></span>
-            </div>
-
-            <div class="summary-item" id="fuel-item">
-                <span class="summary-label">Fuel Cost:</span>
-                <span id="show-fuel"></span>
-            </div>
-            <div class="summary-item" id="parking-item">
-                <span class="summary-label">Parking Fee:</span>
-                <span id="show-parking"></span>
-            </div>
-            <div class="summary-item" id="carwash-item">
-                <span class="summary-label">Car Wash:</span>
-                <span id="show-carwash"></span>
-            </div>
-            <div class="summary-item" id="maintenance-item">
-                <span class="summary-label">Maintenance:</span>
-                <span id="show-maintenance"></span>
-            </div>
-            <div class="summary-item" id="taxi-item">
-                <span class="summary-label">Taxi Fare:</span>
-                <span id="show-taxi"></span>
-            </div>
-
-            <div class="overtime-details" id="overtime-section">
-                <div class="summary-item">
-                    <span class="summary-label">Overtime:</span>
-                    <span id="show-overtime"></span>
-                </div>
-                <div id="overtime-breakdown"></div>
-            </div>
-            <div class="summary-item total-cost">
-                <span class="summary-label">Total Cost:</span>
-                <span id="show-total"></span>
-            </div>
-        </div>
-        <div id="qrcode-section"></div>
-    </div>
-
-    <script>
-        let generatedImageElement = null;
-        const DRAFT_PREFIX = 'driverDraft_';
-
-        // 创建日期对象（处理跨天）
-        function createDate(dateStr, timeStr) {
-            const [year, month, day] = dateStr.split('-').map(Number);
-            const [hours, minutes] = timeStr.split(':').map(Number);
-            return new Date(year, month-1, day, hours, minutes);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const dateInput = document.getElementById('date');
-            const now = new Date();
-            const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-            dateInput.value = localDate.toISOString().substring(0, 10);
-
-            document.getElementById('driver').addEventListener('change', function() {
-                const driver = this.value;
-                if (driver) {
-                    loadDraft(driver);
-                    clearAllErrors();
-                }
-            });
-
-            document.getElementById('plate').addEventListener('change', function() {
-                if (this.value === 'Other') {
-                    const manualPlate = prompt('Enter license plate:');
-                    if (manualPlate) {
-                        const newOption = document.createElement('option');
-                        newOption.value = manualPlate;
-                        newOption.textContent = manualPlate;
-                        this.appendChild(newOption);
-                        this.value = manualPlate;
-                    }
-                }
-                saveDraft();
-            });
-
-            const autoSaveFields = [
-                'date', 'name', 'start-time', 'start-km',
-                'end-time', 'end-km', 'fuel', 'parking', 
-                'car-wash', 'maintenance', 'taxi'
-            ];
-            autoSaveFields.forEach(id => {
-                document.getElementById(id).addEventListener('input', () => {
-                    if (document.getElementById('driver').value) {
-                        saveDraft();
-                    }
-                });
-            });
-
-            const lastDriver = localStorage.getItem('lastDriver');
-            if (lastDriver) {
-                document.getElementById('driver').value = lastDriver;
-                loadDraft(lastDriver);
-            }
-        });
-
-        function validateForm() {
-            clearAllErrors();
-            let isValid = true;
-
-            const driver = document.getElementById('driver').value;
-            const date = document.getElementById('date').value;
-            const plate = document.getElementById('plate').value;
-            const name = document.getElementById('name').value;
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
-            const startKm = document.getElementById('start-km').value;
-            const endKm = document.getElementById('end-km').value;
-            const fuel = document.getElementById('fuel').value;
-            const parking = document.getElementById('parking').value;
-            const carWash = document.getElementById('car-wash').value;
-            const maintenance = document.getElementById('maintenance').value;
-            const taxi = document.getElementById('taxi').value;
-
-            if (!driver) showError('driver-error', 'Please select driver', isValid=false);
-            if (!date) showError('date-error', 'Date is required', isValid=false);
-            if (!plate) showError('plate-error', 'License plate is required', isValid=false);
-            if (!name) showError('name-error', 'Booked by is required', isValid=false);
-            if (!startTime) showError('start-time-error', 'Start time is required', isValid=false);
-            if (!endTime) showError('end-time-error', 'End time is required', isValid=false);
-            if (!startKm) showError('start-km-error', 'Start odometer is required', isValid=false);
-            if (!endKm) showError('end-km-error', 'End odometer is required', isValid=false);
-
-            if (endKm && startKm && parseFloat(endKm) <= parseFloat(startKm)) {
-                showError('end-km-error', 'End km must > Start km', isValid=false);
-            }
-            [fuel, parking, carWash, maintenance, taxi].forEach((v,i) => {
-                if (parseFloat(v) < 0) showError(
-                    ['fuel-error','parking-error','car-wash-error','maintenance-error','taxi-error'][i],
-                    'Cannot be negative',
-                    isValid=false
-                );
-            });
-
-            // 修复跨天时间验证
-            if (startTime && endTime && date) {
-                const startDate = createDate(date, startTime);
-                let endDate = createDate(date, endTime);
-                
-                // 自动处理跨天
-                if (endDate < startDate) {
-                    endDate = new Date(endDate.getTime() + 86400000); // +1天
-                }
-
-                if (endDate < startDate) {
-                    showError('end-time-error', 'End time cannot be earlier', isValid=false);
-                }
-            }
-
-            return isValid;
-        }
-
-        async function validateAndGenerate() {
-            if (!validateForm()) return;
-            try {
-                await generateAndShare();
-            } catch (error) {
-                console.error('生成失败:', error);
-                alert("生成失败，请检查控制台日志");
-            }
-        }
-
-        function saveDraft() {
-            const driver = document.getElementById('driver').value;
-            if (!driver) return;
-            
-            localStorage.setItem('lastDriver', driver);
-            const formData = {
-                driver: driver,
-                date: document.getElementById('date').value,
-                plate: document.getElementById('plate').value,
-                name: document.getElementById('name').value,
-                startTime: document.getElementById('start-time').value,
-                startKm: document.getElementById('start-km').value,
-                endTime: document.getElementById('end-time').value,
-                endKm: document.getElementById('end-km').value,
-                fuel: document.getElementById('fuel').value,
-                parking: document.getElementById('parking').value,
-                carWash: document.getElementById('car-wash').value,
-                maintenance: document.getElementById('maintenance').value,
-                taxi: document.getElementById('taxi').value
-            };
-            localStorage.setItem(DRAFT_PREFIX + driver, JSON.stringify(formData));
-        }
-
-        function loadDraft(driver) {
-            const draft = localStorage.getItem(DRAFT_PREFIX + driver);
-            if (!draft) return;
-
-            const formData = JSON.parse(draft);
-            const plateSelect = document.getElementById('plate');
-            if (!Array.from(plateSelect.options).some(opt => opt.value === formData.plate)) {
-                const newOption = document.createElement('option');
-                newOption.value = formData.plate;
-                newOption.textContent = formData.plate;
-                plateSelect.appendChild(newOption);
-            }
-
-            document.getElementById('date').value = formData.date || '';
-            document.getElementById('plate').value = formData.plate || '';
-            document.getElementById('name').value = formData.name || '';
-            document.getElementById('start-time').value = formData.startTime || '';
-            document.getElementById('start-km').value = formData.startKm || '';
-            document.getElementById('end-time').value = formData.endTime || '';
-            document.getElementById('end-km').value = formData.endKm || '';
-            document.getElementById('fuel').value = formData.fuel || '';
-            document.getElementById('parking').value = formData.parking || '';
-            document.getElementById('car-wash').value = formData.carWash || '';
-            document.getElementById('maintenance').value = formData.maintenance || '';
-            document.getElementById('taxi').value = formData.taxi || '';
-            
-            syncFormData();
-        }
-
-        function clearDraft() {
-            const driver = document.getElementById('driver').value;
-            if (driver) {
-                localStorage.removeItem(DRAFT_PREFIX + driver);
-            }
-        }
-
-        function showError(elementId, message) {
-            const element = document.getElementById(elementId);
-            element.textContent = message;
-            element.style.display = 'block';
-        }
-
-        function clearAllErrors() {
-            document.querySelectorAll('.error-message').forEach(el => {
-                el.textContent = '';
-                el.style.display = 'none';
-            });
-        }
-
-        function calculateOvertime() {
-            const date = document.getElementById('date').value;
-            const startTime = document.getElementById('start-time').value;
-            const endTime = document.getElementById('end-time').value;
-            
-            if (!date || !startTime || !endTime) return { total: 0, breakdown: [] };
-
-            let current = createDate(date, startTime);
-            let endDate = createDate(date, endTime);
-            
-            if (endDate < current) endDate.setDate(endDate.getDate() + 1);
-
-            const results = [];
-            let total = 0;
-
-            while (current < endDate) {
-                const hourStart = new Date(current);
-                const hourEnd = new Date(hourStart.getTime() + 3600000);
-                const actualEnd = hourEnd > endDate ? endDate : hourEnd;
-                
-                const isWeekend = [0, 6].includes(hourStart.getDay());
-                const rate = isWeekend ? 25 : 20;
-                
-                let effectiveHours = 0;
-                if (!isWeekend) {
-                    const workStart = new Date(hourStart);
-                    workStart.setHours(8, 0, 0, 0);
-                    const workEnd = new Date(hourStart);
-                    workEnd.setHours(17, 0, 0, 0);
-
-                    const overlapStart = hourStart < workStart ? workStart : hourStart;
-                    const overlapEnd = actualEnd > workEnd ? workEnd : actualEnd;
-                    
-                    effectiveHours = (overlapEnd - overlapStart) / 3600000;
-                } else {
-                    effectiveHours = (actualEnd - hourStart) / 3600000;
-                }
-
-                if (effectiveHours > 0) {
-                    const amount = effectiveHours * rate;
-                    results.push({
-                        start: hourStart.toLocaleString('en-US', { hour12: false }),
-                        end: actualEnd.toLocaleString('en-US', { hour12: false }),
-                        hours: effectiveHours.toFixed(2),
-                        rate: rate,
-                        amount: +amount.toFixed(2)
-                    });
-                    total += amount;
-                }
-                current = hourEnd;
-            }
-
-            return { total: +total.toFixed(2), breakdown: results };
-        }
-
-        function syncFormData() {
-            document.getElementById('show-driver').textContent = document.getElementById('driver').value;
-            document.getElementById('show-date').textContent = document.getElementById('date').value;
-            document.getElementById('show-plate').textContent = document.getElementById('plate').value;
-            document.getElementById('show-booker').textContent = document.getElementById('name').value;
-            document.getElementById('show-start-time').textContent = document.getElementById('start-time').value;
-            document.getElementById('show-end-time').textContent = document.getElementById('end-time').value;
-            document.getElementById('show-odo').textContent = 
-                `${document.getElementById('start-km').value} → ${document.getElementById('end-km').value} KM`;
-
-            const controlItem = (value, itemId, showId) => {
-                const element = document.getElementById(itemId);
-                const showElement = document.getElementById(showId);
-                if (value > 0) {
-                    element.style.display = "block";
-                    showElement.textContent = `${value} AED`;
-                } else {
-                    element.style.display = "none";
-                }
-            };
-
-            const fuel = +document.getElementById('fuel').value || 0;
-            controlItem(fuel, 'fuel-item', 'show-fuel');
-
-            const parking = +document.getElementById('parking').value || 0;
-            controlItem(parking, 'parking-item', 'show-parking');
-
-            const carWash = +document.getElementById('car-wash').value || 0;
-            controlItem(carWash, 'carwash-item', 'show-carwash');
-
-            const maintenance = +document.getElementById('maintenance').value || 0;
-            controlItem(maintenance, 'maintenance-item', 'show-maintenance');
-
-            const taxi = +document.getElementById('taxi').value || 0;
-            controlItem(taxi, 'taxi-item', 'show-taxi');
-
-            const overtime = calculateOvertime();
-            const overtimeSection = document.getElementById('overtime-section');
-            if (overtime.total > 0) {
-                overtimeSection.style.display = "block";
-                document.getElementById('show-overtime').textContent = `${overtime.total} AED`;
-                
-                const breakdownDiv = document.getElementById('overtime-breakdown');
-                breakdownDiv.innerHTML = overtime.breakdown.map(item => `
-                    <div class="overtime-row">
-                        <span>${item.start.split(', ')[1]} - ${item.end.split(', ')[1]}</span>
-                        <span>${item.hours}h × ${item.rate}AED</span>
-                        <span>${item.amount.toFixed(2)}AED</span>
-                    </div>
-                `).join('');
-            } else {
-                overtimeSection.style.display = "none";
-            }
-
-            const totalCost = fuel + parking + carWash + maintenance + taxi + overtime.total;
-            document.getElementById('show-total').textContent = `${totalCost.toFixed(2)} AED`;
-        }
-
-        function buildDataString() {
-    const plate = document.getElementById("plate").value || "";
-    const driver = document.getElementById("driver").value || "";
-    const date = (document.getElementById("date").value || "").replace(/-/g, "");
-    const startTime = (document.getElementById("start-time").value || "").replace(":", "");
-    const endTime = (document.getElementById("end-time").value || "").replace(":", "");
-    const startKm = document.getElementById("start-km").value || "";
-    const endKm = document.getElementById("end-km").value || "";
-
-    const qrText = "PL:" + plate + "DR:" + driver + "DT:" + date + "ST:" + startTime + "ET:" + endTime + "SK:" + startKm + "EK:" + endKm;
-    console.log("🔍 QR Text to generate:", qrText);  // ✅ 控制台输出便于调试
-    return qrText;
-}`,
-                `plate:${document.getElementById("plate").value}`,
-                `date:${document.getElementById("date").value}`,
-                `start_time:${document.getElementById("start-time").value}`,
-                `end_time:${document.getElementById("end-time").value}`,
-                `booker:${document.getElementById("name").value}`,
-                `start_km:${document.getElementById("start-km").value}`,
-                `end_km:${document.getElementById("end-km").value}`,
-                `fuel_cost:${document.getElementById("fuel").value}`,
-                `parking_fee:${document.getElementById("parking").value}`,
-                `car_wash:${document.getElementById("car-wash").value}`,
-                `maintenance:${document.getElementById("maintenance").value}`,
-                `taxi_fare:${document.getElementById("taxi").value}`,
-                `overtime_breakdown:${JSON.stringify(overtime.breakdown)}`,
-                `total_cost:${(+document.getElementById("fuel").value + 
-                              +document.getElementById("parking").value + 
-                              +document.getElementById("car-wash").value +
-                              +document.getElementById("maintenance").value +
-                              +document.getElementById("taxi").value + 
-                              overtime.total).toFixed(2)}`
-            ].join("|");
-        }
-
-        async function generateAndShare() {
-    const qrcodeDiv = document.getElementById("qrcode-section");
-    qrcodeDiv.innerHTML = "";
-    
-    try {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        new QRCode(qrcodeDiv, {
-            text: buildDataString(),
-            width: 150,
-            height: 150,
-            colorDark: "#2c3e50",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const exportContainer = document.getElementById("export-container");
-        exportContainer.style.display = "flex";
-        
-        const canvas = await html2canvas(exportContainer, {
-            useCORS: true,
-            scale: 2,
-            logging: true,
-            allowTaint: true
-        });
-
-        if (!canvas) throw new Error('截图失败');
-
-        if (generatedImageElement) generatedImageElement.remove();
-        generatedImageElement = document.createElement('img');
-        generatedImageElement.src = canvas.toDataURL();
-        generatedImageElement.id = 'generated-image';
-        document.body.appendChild(generatedImageElement);
-
-        const link = document.createElement('a');
-        link.download = `Driving_Record_${Date.now()}.png`;
-        link.href = generatedImageElement.src;
-
-        if (navigator.userAgent.toLowerCase().includes('micromessenger')) {
-            const newWindow = window.open();
-            newWindow.document.write(`<img src="${link.href}" style="max-width:100%" />`);
-        } else {
-            link.click();
-        }
-
-        clearDraft();
-        exportContainer.style.display = "none";
-    } catch (error) {
-        console.error("❌ QR Code or Screenshot generation failed:", error);
-        alert("生成失败，请检查控制台日志");
+  <div class="header">
+    <img class="company-logo" src="https://bobby520.github.io/dewa-qrcode/company-logo.png" alt="Company Logo"><br>
+    <h2>Invoice QR Code Generator</h2>
+    <p>Upload PDF invoices for automatic QR generation</p>
+  </div>
+
+  <input type="file" id="pdfInput" accept=".pdf" multiple />
+  <div id="output"></div>
+
+<script>
+document.getElementById('pdfInput').addEventListener('change', async function (e) {
+  const files = Array.from(e.target.files);
+  const output = document.getElementById("output");
+  output.innerHTML = "";
+
+  const readPdfText = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+    let text = "";
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join("\n") + "\n";
     }
-});
+    return text;
+  };
 
-            await new Promise(resolve => setTimeout(resolve, 500));
+  const extractFields = (text) => {
+    const getVal = (regex) => {
+      const match = text.match(regex);
+      return match ? match[1].trim() : "";
+    };
 
-            const exportContainer = document.getElementById("export-container");
-            exportContainer.style.display = "flex";
-            
-            let canvas;
-            let retry = 0;
-            while (retry < 3) {
-                try {
-                    canvas = await html2canvas(exportContainer, {
-                        useCORS: true,
-                        scale: 2,
-                        logging: true,
-                        allowTaint: true
-                    });
-                    break;
-                } catch (err) {
-                    retry++;
-                    await new Promise(r => setTimeout(r, 300));
-                }
-            }
+    const formatDateToYMD = (d) => {
+      const date = new Date(d);
+      if (isNaN(date)) return "";
+      return date.getFullYear().toString() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2);
+    };
 
-            if (!canvas) throw new Error('生成截图失败');
+    const result = [];
 
-            if (generatedImageElement) generatedImageElement.remove();
-            generatedImageElement = document.createElement('img');
-            generatedImageElement.src = canvas.toDataURL();
-            generatedImageElement.id = 'generated-image';
-            document.body.appendChild(generatedImageElement);
+    const phoneRoomMap = {
+      "043808162": "Bldg 81 - 07", "043861077": "Bldg 81 - 08", "045913147": "Bldg 81 - 17",
+      "043237002": "Bldg 82 - 06", "043274474": "Bldg 82 - 18", "043278282": "Bldg 83 - 03",
+      "042982888": "Bldg 83 - 10", "042838338": "Bldg 83 - 12", "043264848": "Bldg 85 - 06",
+      "048820966": "Bldg 93 - 05", "043385947": "Bldg 81 - 05"
+    };
 
-            const link = document.createElement('a');
-            link.download = `Driving_Record_${Date.now()}.png`;
-            link.href = generatedImageElement.src;
-            
-            if (navigator.userAgent.toLowerCase().includes('micromessenger')) {
-                const newWindow = window.open();
-                newWindow.document.write(`<img src="${link.href}" style="max-width:100%" />`);
-            } else {
-                link.click();
-            }
+    const duRoomMap = {
+      "5.54369": "OFFICE-1901",
+      "0166463202": "MEADOWS VILLA",
+      "0164819675": "Burj vist-BBH",
+      "0172039346": "Banyan Tree"
+    };
 
-            clearDraft();
-            exportContainer.style.display = "none";
+    const lines = text.split(/\n/).map(l => l.trim());
+
+    // ✅ Etisalat 网络账单
+    const inetInvoice = getVal(/Bill number\s+([A-Z0-9]+)/i);
+    const inetIssue = getVal(/Bill issue date\s+(\d{2}\s+\w+\s+\d{4})/i);
+    const inetPeriod = text.match(/Bill period\s+(\d{2}\s+\w+\s+\d{4})\s+[–-]\s+(\d{2}\s+\w+\s+\d{4})/i);
+    const inetStart = inetPeriod ? inetPeriod[1] : "";
+    const inetEnd = inetPeriod ? inetPeriod[2] : "";
+    let inetAmt = "";
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (/^\d+[.]?$/.test(lines[i]) && /^\d{1,2}$/.test(lines[i + 1])) {
+        inetAmt = lines[i].replace(/\.$/, '') + '.' + lines[i + 1];
+        break;
+      }
+    }
+    const etisalatNumber = getVal(/Landline number\s+(\d{9})/);
+    const inetRoom = phoneRoomMap[etisalatNumber] || "UNKNOWN";
+    if (inetInvoice && inetAmt && inetStart && inetEnd) {
+      result.push({
+        title: "Etisalat eLife",
+        qr: `CLS:INTERNET|TIT:${inetInvoice}|SD:${formatDateToYMD(inetStart)}|ED:${formatDateToYMD(inetEnd)}|AMT:${inetAmt}|QTY:1|PRI:${inetAmt}|DT:${formatDateToYMD(inetIssue)}|NOTE:eLife|ROOM:${inetRoom}`
+      });
+    }
+
+    // ✅ DU 网络账单增强识别逻辑
+    const duInvoice = getVal(/Your bill number\s+([0-9]+)/);
+    const duIssue = getVal(/Your bill issue date\s+(\d{1,2}\s+\w+\s+\d{4})/i);
+    let duAmt = "";
+    for (let i = 0; i < lines.length - 1; i++) {
+      if (/total amount due/i.test(lines[i]) && /AED/i.test(lines[i + 1])) {
+        const match = lines[i + 1].match(/AED\s*([\d,.]+)/i);
+        if (match) {
+          duAmt = match[1].replace(/,/g, "");
+          break;
         }
+      }
+    }
+    let duAccount = getVal(/Your account number\s+([0-9.]+)/);
+    if (!duAccount) {
+      const accLine = lines.find(line => /account number/i.test(line));
+      const alt = accLine && accLine.match(/([0-9.]+)/);
+      duAccount = alt ? alt[1] : "";
+    }
+    const duRoom = duRoomMap[duAccount] || "UNKNOWN";
+    const duStart = "01 Feb 2025";
+    const duEnd = "28 Feb 2025";
+    if (duInvoice && duAmt && duIssue) {
+      result.push({
+        title: "DU Internet Bill",
+        qr: `CLS:DU|TIT:${duInvoice}|SD:${formatDateToYMD(duStart)}|ED:${formatDateToYMD(duEnd)}|AMT:${duAmt}|QTY:1|PRI:${duAmt}|DT:${formatDateToYMD(duIssue)}|NOTE:DU|ROOM:${duRoom}`
+      });
+    }
+//////////////////////////////////////////////
+return { result };
+  };
 
-        document.getElementById('start-time').addEventListener('change', syncFormData);
-        document.getElementById('end-time').addEventListener('change', syncFormData);
-        document.getElementById('date').addEventListener('change', syncFormData);
-        document.getElementById('fuel').addEventListener('input', syncFormData);
-        document.getElementById('parking').addEventListener('input', syncFormData);
-        document.getElementById('car-wash').addEventListener('input', syncFormData);
-        document.getElementById('maintenance').addEventListener('input', syncFormData);
-        document.getElementById('taxi').addEventListener('input', syncFormData);
-    </script>
+  for (const file of files) {
+    const text = await readPdfText(file);
+    const { result } = extractFields(text);
+
+    const group = document.createElement("div");
+    group.className = "invoice-group";
+    group.innerHTML = `<div class="invoice-title">${file.name}</div>`;
+
+    if (result.length === 0) {
+      group.innerHTML += `<p>⚠️ No valid charges found.</p>`;
+    }
+
+    result.forEach((item, idx) => {
+      const card = document.createElement("div");
+      card.className = "qr-card";
+
+      const qrBox = document.createElement("div");
+      qrBox.id = `qr_${file.name}_${idx}`;
+      qrBox.className = "qr-block";
+
+      const summary = document.createElement("div");
+      summary.className = "summary";
+      summary.innerHTML = `<b>${item.title}</b><br>${item.qr.replace(/\|/g, "<br>")}`;
+
+      card.appendChild(qrBox);
+      card.appendChild(summary);
+      group.appendChild(card);
+
+      setTimeout(() => {
+        new QRCode(qrBox, {
+          text: item.qr,
+          width: 180,
+          height: 180
+        });
+      }, 10);
+    });
+
+    document.getElementById("output").appendChild(group);
+  }
+});
+</script>
+
+
+
 </body>
 </html>
