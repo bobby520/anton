@@ -1,176 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Invoice QR Generator</title>
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <meta charset="UTF-8">
+  <title>Invoice Amount OCR</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
   <style>
-    body { font-family: Arial; background: #f5f5f5; padding: 20px; max-width: 1000px; margin: auto; }
-    .header { text-align:center; padding: 20px; background: #fff; margin-bottom: 20px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .company-logo { height: 60px; margin-bottom: 10px; }
-    .invoice-group { background: #fff; padding: 20px; border-radius: 10px; margin-bottom: 30px; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
-    .invoice-title { font-size: 18px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-    .qr-card { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: #fafafa; }
-    .qr-block { width: 180px; height: 180px; }
-    .summary { font-size: 14px; line-height: 1.5; }
+    body { font-family: Arial; padding: 20px; background: #f0f0f0; }
+    #preview { max-width: 100%; margin-top: 10px; border: 1px solid #ccc; }
+    #result { margin-top: 20px; font-size: 18px; color: green; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <img class="company-logo" src="https://bobby520.github.io/dewa-qrcode/company-logo.png" alt="Company Logo"><br>
-    <h2>Invoice QR Code Generator</h2>
-    <p>Upload PDF invoices for automatic QR generation</p>
-  </div>
+  <h2>📷 发票拍照识别总金额</h2>
 
-  <input type="file" id="pdfInput" accept=".pdf" multiple />
-  <div id="output"></div>
+  <input type="file" accept="image/*" capture="environment" id="imageInput">
+  <img id="preview" src="#" alt="Image Preview" style="display:none" />
+  <div id="result">识别结果将在此处显示...</div>
 
-<script>
-document.getElementById('pdfInput').addEventListener('change', async function (e) {
-  const files = Array.from(e.target.files);
-  const output = document.getElementById("output");
-  output.innerHTML = "";
+  <script>
+    const input = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+    const result = document.getElementById('result');
 
-  const readPdfText = async (file) => {
-    const buffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-    let text = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map(item => item.str).join("\n") + "\n";
-    }
-    return text;
-  };
+    input.addEventListener('change', async () => {
+      const file = input.files[0];
+      if (!file) return;
 
-  const extractFields = (text) => {
-    const getVal = (regex) => {
-      const match = text.match(regex);
-      return match ? match[1].trim() : "";
-    };
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
 
-    const formatDateToYMD = (d) => {
-      const date = new Date(d);
-      if (isNaN(date)) return "";
-      return date.getFullYear().toString() + ("0" + (date.getMonth() + 1)).slice(-2) + ("0" + date.getDate()).slice(-2);
-    };
+      result.textContent = '正在识别，请稍候...';
 
-    const result = [];
+      const { data: { text } } = await Tesseract.recognize(file, 'eng');
 
-    const phoneRoomMap = {
-      "043808162": "Bldg 81 - 07", "043861077": "Bldg 81 - 08", "045913147": "Bldg 81 - 17",
-      "043237002": "Bldg 82 - 06", "043274474": "Bldg 82 - 18", "043278282": "Bldg 83 - 03",
-      "042982888": "Bldg 83 - 10", "042838338": "Bldg 83 - 12", "043264848": "Bldg 85 - 06",
-      "048820966": "Bldg 93 - 05", "043385947": "Bldg 81 - 05"
-    };
-
-    const duRoomMap = {
-      "5.54369": "OFFICE-1901",
-      "0166463202": "MEADOWS VILLA",
-      "0164819675": "Burj vist-BBH",
-      "0172039346": "Banyan Tree"
-    };
-
-    const lines = text.split(/\n/).map(l => l.trim());
-
-    // ✅ Etisalat 网络账单
-    const inetInvoice = getVal(/Bill number\s+([A-Z0-9]+)/i);
-    const inetIssue = getVal(/Bill issue date\s+(\d{2}\s+\w+\s+\d{4})/i);
-    const inetPeriod = text.match(/Bill period\s+(\d{2}\s+\w+\s+\d{4})\s+[–-]\s+(\d{2}\s+\w+\s+\d{4})/i);
-    const inetStart = inetPeriod ? inetPeriod[1] : "";
-    const inetEnd = inetPeriod ? inetPeriod[2] : "";
-    let inetAmt = "";
-    for (let i = 0; i < lines.length - 1; i++) {
-      if (/^\d+[.]?$/.test(lines[i]) && /^\d{1,2}$/.test(lines[i + 1])) {
-        inetAmt = lines[i].replace(/\.$/, '') + '.' + lines[i + 1];
-        break;
-      }
-    }
-    const etisalatNumber = getVal(/Landline number\s+(\d{9})/);
-    const inetRoom = phoneRoomMap[etisalatNumber] || "UNKNOWN";
-    if (inetInvoice && inetAmt && inetStart && inetEnd) {
-      result.push({
-        title: "Etisalat eLife",
-        qr: `CLS:INTERNET|TIT:${inetInvoice}|SD:${formatDateToYMD(inetStart)}|ED:${formatDateToYMD(inetEnd)}|AMT:${inetAmt}|QTY:1|PRI:${inetAmt}|DT:${formatDateToYMD(inetIssue)}|NOTE:eLife|ROOM:${inetRoom}`
-      });
-    }
-
-    // ✅ DU 网络账单增强识别逻辑
-    const duInvoice = getVal(/Your bill number\s+([0-9]+)/);
-    const duIssue = getVal(/Your bill issue date\s+(\d{1,2}\s+\w+\s+\d{4})/i);
-    let duAmt = "";
-    for (let i = 0; i < lines.length - 1; i++) {
-      if (/total amount due/i.test(lines[i]) && /AED/i.test(lines[i + 1])) {
-        const match = lines[i + 1].match(/AED\s*([\d,.]+)/i);
-        if (match) {
-          duAmt = match[1].replace(/,/g, "");
-          break;
+      const lines = text.split('\n').map(line => line.trim());
+      let foundAmount = null;
+      for (let line of lines) {
+        if (/total|amount|payable|net/i.test(line)) {
+          const match = line.match(/\d+\.\d{2}/g);
+          if (match) foundAmount = match[match.length - 1];
         }
       }
-    }
-    let duAccount = getVal(/Your account number\s+([0-9.]+)/);
-    if (!duAccount) {
-      const accLine = lines.find(line => /account number/i.test(line));
-      const alt = accLine && accLine.match(/([0-9.]+)/);
-      duAccount = alt ? alt[1] : "";
-    }
-    const duRoom = duRoomMap[duAccount] || "UNKNOWN";
-    const duStart = "01 Feb 2025";
-    const duEnd = "28 Feb 2025";
-    if (duInvoice && duAmt && duIssue) {
-      result.push({
-        title: "DU Internet Bill",
-        qr: `CLS:DU|TIT:${duInvoice}|SD:${formatDateToYMD(duStart)}|ED:${formatDateToYMD(duEnd)}|AMT:${duAmt}|QTY:1|PRI:${duAmt}|DT:${formatDateToYMD(duIssue)}|NOTE:DU|ROOM:${duRoom}`
-      });
-    }
-//////////////////////////////////////////////
-return { result };
-  };
 
-  for (const file of files) {
-    const text = await readPdfText(file);
-    const { result } = extractFields(text);
-
-    const group = document.createElement("div");
-    group.className = "invoice-group";
-    group.innerHTML = `<div class="invoice-title">${file.name}</div>`;
-
-    if (result.length === 0) {
-      group.innerHTML += `<p>⚠️ No valid charges found.</p>`;
-    }
-
-    result.forEach((item, idx) => {
-      const card = document.createElement("div");
-      card.className = "qr-card";
-
-      const qrBox = document.createElement("div");
-      qrBox.id = `qr_${file.name}_${idx}`;
-      qrBox.className = "qr-block";
-
-      const summary = document.createElement("div");
-      summary.className = "summary";
-      summary.innerHTML = `<b>${item.title}</b><br>${item.qr.replace(/\|/g, "<br>")}`;
-
-      card.appendChild(qrBox);
-      card.appendChild(summary);
-      group.appendChild(card);
-
-      setTimeout(() => {
-        new QRCode(qrBox, {
-          text: item.qr,
-          width: 180,
-          height: 180
-        });
-      }, 10);
+      result.textContent = foundAmount 
+        ? `✅ 识别金额：AED ${foundAmount}`
+        : '❌ 未识别到总金额';
     });
-
-    document.getElementById("output").appendChild(group);
-  }
-});
-</script>
-
-
-
+  </script>
 </body>
 </html>
