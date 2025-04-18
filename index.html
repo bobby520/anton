@@ -1,59 +1,51 @@
-from pathlib import Path
 
-# 修改后的完整 HTML 文件内容（添加费用归属人字段）
-updated_html_code = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>活动费用确认单</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>活动费用确认单（手机版）</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
-    h1 { text-align: center; }
-    input, button, select { margin: 5px; padding: 5px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 20px; background: #fff; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-    .signature-box { border: 1px solid #ccc; width: 100%; height: 80px; cursor: crosshair; background: #fff; }
-    .btn { padding: 8px 16px; background: #0078D4; color: #fff; border: none; border-radius: 4px; }
-    .preview { margin-top: 30px; background: #fff; padding: 20px; border: 1px solid #ccc; }
+    body { font-family: sans-serif; padding: 10px; margin: 0; background: #f0f0f0; }
+    h1 { text-align: center; font-size: 20px; }
+    input, button, select { width: 100%; margin: 6px 0; padding: 8px; font-size: 16px; box-sizing: border-box; }
+    table { border-collapse: collapse; width: 100%; background: #fff; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    .btn { background: #0078D4; color: #fff; border: none; border-radius: 4px; font-size: 16px; }
+    .preview { background: #fff; padding: 10px; border: 1px solid #ccc; margin-top: 20px; }
+    .signature-box { border: 1px solid #ccc; width: 100%; height: 100px; background: #fff; touch-action: none; }
+    .signature-container { position: relative; }
+    .clear-btn { position: absolute; right: 0; top: 0; background: #f44336; color: #fff; border: none; padding: 4px 8px; font-size: 12px; }
   </style>
 </head>
 <body>
 
-<h1>活动费用确认单</h1>
+<h1>活动费用确认单（手机版）</h1>
 
-<div>
-  <label>活动名称: <input type="text" id="title" value="迪拜共享服务中心客户活动"></label>
-  <label>活动时间: <input type="date" id="date" value="2025-04-09"></label><br>
-  <label>活动地点: <input type="text" id="location" value="迪拜阿联酋总部"></label>
-  <label>费用归属人: <input type="text" id="owner" value="资金管理员"></label><br>
-  <label>参与人员: <input type="text" id="people" value="阿里肯督等19人参加（20人用费）"></label>
-</div>
+<input type="text" id="title" placeholder="活动名称">
+<input type="date" id="date">
+<input type="text" id="location" placeholder="活动地点">
+<input type="text" id="owner" placeholder="费用归属人">
+<input type="text" id="people" placeholder="参与人员">
 
 <h3>费用明细</h3>
 <table id="feeTable">
   <thead>
-    <tr>
-      <th>项目分类</th>
-      <th>说明</th>
-      <th>数量</th>
-      <th>单价</th>
-      <th>金额</th>
-      <th>操作</th>
-    </tr>
+    <tr><th>分类</th><th>说明</th><th>数量</th><th>单价</th><th>金额</th><th>操作</th></tr>
   </thead>
   <tbody></tbody>
 </table>
 <button class="btn" onclick="addRow()">添加明细</button>
 
-<br><br>
-<label>备注: <input type="text" id="note" style="width: 80%;" value="含折叠桌、白袍等"></label><br><br>
+<input type="text" id="note" placeholder="备注，例如含桌椅、交通等">
+
 <button class="btn" onclick="generate()">生成二维码</button>
-<button class="btn" onclick="exportImg()">导出图片</button>
+<button class="btn" onclick="exportImg()">导出为图片</button>
 
 <div id="preview" class="preview">
-  <h2 style="text-align:center;">活动费用确认单</h2>
+  <h2 style="text-align:center;">费用确认单</h2>
   <p>活动名称: <span id="p_title"></span></p>
   <p>活动时间: <span id="p_date"></span></p>
   <p>费用归属人: <span id="p_owner"></span></p>
@@ -61,138 +53,129 @@ updated_html_code = """<!DOCTYPE html>
   <p>参与人员: <span id="p_people"></span></p>
 
   <table id="previewTable">
-    <thead>
-      <tr>
-        <th>项目分类</th>
-        <th>说明</th>
-        <th>数量</th>
-        <th>单价</th>
-        <th>金额</th>
-      </tr>
-    </thead>
+    <thead><tr><th>分类</th><th>说明</th><th>数量</th><th>单价</th><th>金额</th></tr></thead>
     <tbody></tbody>
-    <tfoot>
-      <tr>
-        <td colspan="4">合计</td>
-        <td id="total">0</td>
-      </tr>
-    </tfoot>
+    <tfoot><tr><td colspan="4">合计</td><td id="total">0</td></tr></tfoot>
   </table>
 
   <p>备注: <span id="p_note"></span></p>
 
-  <table>
-    <tr>
-      <td>
-        发起人签字：<br>
-        <canvas id="sign1" class="signature-box"></canvas>
-      </td>
-      <td>
-        客户签字确认：<br>
-        <canvas id="sign2" class="signature-box"></canvas>
-      </td>
-    </tr>
-  </table>
+  <div class="signature-container">
+    发起人签字：<br>
+    <canvas id="sign1" class="signature-box"></canvas>
+    <button class="clear-btn" onclick="clearCanvas('sign1')">清除</button>
+  </div><br>
 
-  <div id="qrcode" style="margin-top:20px; text-align: center;"></div>
+  <div class="signature-container">
+    客户签字确认：<br>
+    <canvas id="sign2" class="signature-box"></canvas>
+    <button class="clear-btn" onclick="clearCanvas('sign2')">清除</button>
+  </div>
+
+  <div id="qrcode" style="margin-top:15px; text-align:center;"></div>
 </div>
 
 <script>
-  function addRow() {
-    const table = document.querySelector("#feeTable tbody");
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td><input></td>
-      <td><input></td>
-      <td><input type="number" oninput="updateAmount(this)"></td>
-      <td><input type="number" oninput="updateAmount(this)"></td>
-      <td><input readonly></td>
-      <td><button onclick="removeRow(this)">删除</button></td>
-    `;
-    table.appendChild(row);
+function addRow() {
+  const table = document.querySelector("#feeTable tbody");
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td><input></td>
+    <td><input></td>
+    <td><input type="number" oninput="updateAmount(this)"></td>
+    <td><input type="number" oninput="updateAmount(this)"></td>
+    <td><input readonly></td>
+    <td><button onclick="removeRow(this)">删</button></td>
+  `;
+  table.appendChild(row);
+}
+
+function removeRow(btn) {
+  btn.closest("tr").remove();
+}
+
+function updateAmount(el) {
+  const row = el.closest("tr");
+  const qty = parseFloat(row.cells[2].children[0].value) || 0;
+  const price = parseFloat(row.cells[3].children[0].value) || 0;
+  row.cells[4].children[0].value = (qty * price).toFixed(2);
+}
+
+function generate() {
+  document.getElementById("p_title").textContent = document.getElementById("title").value;
+  document.getElementById("p_date").textContent = document.getElementById("date").value;
+  document.getElementById("p_owner").textContent = document.getElementById("owner").value;
+  document.getElementById("p_location").textContent = document.getElementById("location").value;
+  document.getElementById("p_people").textContent = document.getElementById("people").value;
+  document.getElementById("p_note").textContent = document.getElementById("note").value;
+
+  const tbody = document.querySelector("#previewTable tbody");
+  tbody.innerHTML = "";
+  let total = 0;
+  document.querySelectorAll("#feeTable tbody tr").forEach(row => {
+    const cat = row.cells[0].children[0].value;
+    const desc = row.cells[1].children[0].value;
+    const qty = row.cells[2].children[0].value;
+    const price = row.cells[3].children[0].value;
+    const amt = row.cells[4].children[0].value;
+    total += parseFloat(amt) || 0;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${cat}</td><td>${desc}</td><td>${qty}</td><td>${price}</td><td>${amt}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById("total").textContent = total.toFixed(2);
+
+  const qrContent = `OWN:${document.getElementById("owner").value}|ACT:${document.getElementById("title").value}|DATE:${document.getElementById("date").value}|LOC:${document.getElementById("location").value}|TOTAL:${total.toFixed(2)}|NOTE:${document.getElementById("note").value}`;
+  document.getElementById("qrcode").innerHTML = "";
+  new QRCode(document.getElementById("qrcode"), {
+    text: qrContent,
+    width: 128,
+    height: 128
+  });
+}
+
+function exportImg() {
+  html2canvas(document.querySelector("#preview")).then(canvas => {
+    const link = document.createElement("a");
+    link.download = "确认单.png";
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+
+function setupSignCanvas(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext("2d");
+  let drawing = false;
+
+  function getXY(e) {
+    if (e.touches) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    }
+    return { x: e.offsetX, y: e.offsetY };
   }
 
-  function removeRow(btn) {
-    btn.closest("tr").remove();
-  }
+  canvas.addEventListener("mousedown", e => { drawing = true; const p = getXY(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+  canvas.addEventListener("mousemove", e => { if (drawing) { const p = getXY(e); ctx.lineTo(p.x, p.y); ctx.stroke(); } });
+  canvas.addEventListener("mouseup", () => drawing = false);
+  canvas.addEventListener("touchstart", e => { e.preventDefault(); drawing = true; const p = getXY(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); });
+  canvas.addEventListener("touchmove", e => { e.preventDefault(); if (drawing) { const p = getXY(e); ctx.lineTo(p.x, p.y); ctx.stroke(); } });
+  canvas.addEventListener("touchend", () => drawing = false);
+}
 
-  function updateAmount(el) {
-    const row = el.closest("tr");
-    const qty = parseFloat(row.cells[2].children[0].value) || 0;
-    const price = parseFloat(row.cells[3].children[0].value) || 0;
-    row.cells[4].children[0].value = (qty * price).toFixed(2);
-  }
+function clearCanvas(id) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
 
-  function generate() {
-    document.getElementById("p_title").textContent = document.getElementById("title").value;
-    document.getElementById("p_date").textContent = document.getElementById("date").value;
-    document.getElementById("p_owner").textContent = document.getElementById("owner").value;
-    document.getElementById("p_location").textContent = document.getElementById("location").value;
-    document.getElementById("p_people").textContent = document.getElementById("people").value;
-    document.getElementById("p_note").textContent = document.getElementById("note").value;
-
-    const pTable = document.querySelector("#previewTable tbody");
-    pTable.innerHTML = "";
-    let total = 0;
-
-    document.querySelectorAll("#feeTable tbody tr").forEach(row => {
-      const cat = row.cells[0].children[0].value;
-      const desc = row.cells[1].children[0].value;
-      const qty = row.cells[2].children[0].value;
-      const price = row.cells[3].children[0].value;
-      const amt = row.cells[4].children[0].value;
-      total += parseFloat(amt) || 0;
-
-      const newRow = document.createElement("tr");
-      newRow.innerHTML = `<td>${cat}</td><td>${desc}</td><td>${qty}</td><td>${price}</td><td>${amt}</td>`;
-      pTable.appendChild(newRow);
-    });
-
-    document.getElementById("total").textContent = total.toFixed(2);
-
-    const qrContent = `OWN:${document.getElementById("owner").value}|ACT:${document.getElementById("title").value}|DATE:${document.getElementById("date").value}|LOC:${document.getElementById("location").value}|TOTAL:${total.toFixed(2)}|NOTE:${document.getElementById("note").value}`;
-    document.getElementById("qrcode").innerHTML = "";
-    new QRCode(document.getElementById("qrcode"), {
-      text: qrContent,
-      width: 128,
-      height: 128
-    });
-  }
-
-  function exportImg() {
-    html2canvas(document.querySelector("#preview")).then(canvas => {
-      const link = document.createElement("a");
-      link.download = "费用确认单.png";
-      link.href = canvas.toDataURL();
-      link.click();
-    });
-  }
-
-  function setupSignCanvas(id) {
-    const canvas = document.getElementById(id);
-    const ctx = canvas.getContext("2d");
-    let drawing = false;
-
-    canvas.addEventListener("mousedown", e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
-    canvas.addEventListener("mousemove", e => {
-      if (drawing) {
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.stroke();
-      }
-    });
-    canvas.addEventListener("mouseup", () => drawing = false);
-    canvas.addEventListener("mouseleave", () => drawing = false);
-  }
-
-  setupSignCanvas("sign1");
-  setupSignCanvas("sign2");
+setupSignCanvas("sign1");
+setupSignCanvas("sign2");
 </script>
 
 </body>
 </html>
-"""
-
-# 保存为 HTML 文件
-file_path = Path("/mnt/data/activity_confirmation_with_owner.html")
-file_path.write_text(updated_html_code, encoding="utf-8")
-file_path.name
