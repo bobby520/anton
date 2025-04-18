@@ -123,7 +123,7 @@ function clearSignature() {
 function confirmSignature() {
   const dataURL = canvas.toDataURL();
   signatureData[currentTarget] = dataURL;
-  document.getElementById('signature_' + currentTarget).innerHTML = '<img src="' + dataURL + '" width="100%">';
+  document.getElementById('signature_' + currentTarget).innerHTML = '<img src="' + dataURL + '" style="max-width:200px;">';
   closeSignature();
 }
 
