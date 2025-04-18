@@ -42,8 +42,7 @@
   <p>备注：<span id="p_note"></span></p>
 
   <div>
-    发起人签字：<div class="signature-placeholder" onclick="openSignature('initiator')" id="signature_initiator">点击签名</div>
-    客户签字确认：<div class="signature-placeholder" onclick="openSignature('client')" id="signature_client">点击签名</div>
+    签字确认：<div class="signature-placeholder" onclick="openSignature('merged')" id="signature_merged">点击签名</div>
   </div>
 
   <div id="qrcode" style="text-align:center; margin-top:10px;"></div>
@@ -90,6 +89,7 @@ canvas.addEventListener('mousemove', e => {
 canvas.addEventListener('mouseup', () => drawing = false);
 canvas.addEventListener('mouseleave', () => drawing = false);
 
+// 合并签字，只保留一个签字板
 // 移动端触控支持并防止页面滚动
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
@@ -109,7 +109,7 @@ canvas.addEventListener('touchmove', e => {
 canvas.addEventListener('touchend', () => drawing = false);
 
 function openSignature(target) {
-  currentTarget = target;
+  currentTarget = target === 'merged' ? 'merged' : 'merged';
   document.getElementById('signatureModal').style.display = 'flex';
   document.body.style.overflow = 'hidden'; // 禁止背景滚动
 }
@@ -122,8 +122,8 @@ function clearSignature() {
 }
 function confirmSignature() {
   const dataURL = canvas.toDataURL();
-  signatureData[currentTarget] = dataURL;
-  document.getElementById('signature_' + currentTarget).innerHTML = '<img src="' + dataURL + '" style="max-width:200px;">';
+  signatureData['merged'] = dataURL;
+  document.getElementById('signature_merged').innerHTML = '<img src="' + dataURL + '" style="max-width:200px;">';
   closeSignature();
 }
 
