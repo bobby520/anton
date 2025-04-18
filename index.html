@@ -1,25 +1,27 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>活动费用确认单 - 弹出签字</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-<style>
-body { font-family: sans-serif; margin: 0; padding: 10px; background: #f0f0f0; }
-input, button, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; font-size: 16px; }
-.btn { background: #0078D4; color: #fff; border: none; border-radius: 5px; font-size: 16px; padding: 10px; margin-top: 10px; }
-canvas { border: 1px solid #ccc; }
-.preview, table { background: #fff; padding: 10px; margin-top: 10px; border: 1px solid #ccc; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-.signature-placeholder { border: 1px dashed #999; height: 80px; display: flex; align-items: center; justify-content: center; background: #fff; cursor: pointer; }
-#signatureModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
-#signatureModalContent { background: #fff; padding: 20px; width: 90vw; max-width: 400px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>活动费用确认单 - 弹出签字（修复滑动）</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 10px; background: #f0f0f0; }
+    input, button, select { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; font-size: 16px; }
+    .btn { background: #0078D4; color: #fff; border: none; border-radius: 5px; font-size: 16px; padding: 10px; margin-top: 10px; }
+    canvas { border: 1px solid #ccc; touch-action: none; }
+    .preview, table { background: #fff; padding: 10px; margin-top: 10px; border: 1px solid #ccc; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+    .signature-placeholder { border: 1px dashed #999; height: 80px; display: flex; align-items: center; justify-content: center; background: #fff; cursor: pointer; }
+    #signatureModal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; overflow: hidden; }
+    #signatureModalContent { background: #fff; padding: 20px; width: 90vw; max-width: 400px; }
+  </style>
 </head>
 <body>
+
 <h2 style="text-align:center;">活动费用确认单</h2>
 <input type="text" id="title" placeholder="活动名称">
 <input type="date" id="date">
@@ -27,30 +29,36 @@ th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
 <input type="text" id="owner" placeholder="费用归属人">
 <input type="text" id="people" placeholder="参与人员">
 <input type="text" id="note" placeholder="备注信息">
+
 <button class="btn" onclick="generate()">生成二维码</button>
 <button class="btn" onclick="exportImg()">导出为图片</button>
+
 <div class="preview" id="preview">
-<p>活动名称：<span id="p_title"></span></p>
-<p>日期：<span id="p_date"></span></p>
-<p>地点：<span id="p_location"></span></p>
-<p>费用归属人：<span id="p_owner"></span></p>
-<p>人员：<span id="p_people"></span></p>
-<p>备注：<span id="p_note"></span></p>
-<div>
-发起人签字：<div class="signature-placeholder" onclick="openSignature('initiator')" id="signature_initiator">点击签名</div>
-客户签字确认：<div class="signature-placeholder" onclick="openSignature('client')" id="signature_client">点击签名</div>
+  <p>活动名称：<span id="p_title"></span></p>
+  <p>日期：<span id="p_date"></span></p>
+  <p>地点：<span id="p_location"></span></p>
+  <p>费用归属人：<span id="p_owner"></span></p>
+  <p>人员：<span id="p_people"></span></p>
+  <p>备注：<span id="p_note"></span></p>
+
+  <div>
+    发起人签字：<div class="signature-placeholder" onclick="openSignature('initiator')" id="signature_initiator">点击签名</div>
+    客户签字确认：<div class="signature-placeholder" onclick="openSignature('client')" id="signature_client">点击签名</div>
+  </div>
+
+  <div id="qrcode" style="text-align:center; margin-top:10px;"></div>
 </div>
-<div id="qrcode" style="text-align:center; margin-top:10px;"></div>
-</div>
+
 <div id="signatureModal">
   <div id="signatureModalContent">
     <p>请签名：</p>
-    <canvas id="signatureCanvas" width="300" height="150" style="border:1px solid #ccc;"></canvas><br>
+    <canvas id="signatureCanvas" width="300" height="150"></canvas><br>
     <button onclick="confirmSignature()">确认签名</button>
     <button onclick="clearSignature()">清除</button>
     <button onclick="closeSignature()">取消</button>
   </div>
 </div>
+
 <script>
 let currentTarget = '';
 let signatureData = {};
@@ -58,16 +66,56 @@ const canvas = document.getElementById('signatureCanvas');
 const ctx = canvas.getContext('2d');
 let drawing = false;
 
-canvas.addEventListener('mousedown', e => { drawing = true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); });
-canvas.addEventListener('mousemove', e => { if (drawing) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); }});
+function getTouchPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.touches ? e.touches[0].clientX : e.clientX) - rect.left,
+    y: (e.touches ? e.touches[0].clientY : e.clientY) - rect.top
+  };
+}
+
+canvas.addEventListener('mousedown', e => {
+  drawing = true;
+  const p = getTouchPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+});
+canvas.addEventListener('mousemove', e => {
+  if (drawing) {
+    const p = getTouchPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+});
 canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mouseleave', () => drawing = false);
+
+// 移动端触控支持并防止页面滚动
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  drawing = true;
+  const p = getTouchPos(e);
+  ctx.beginPath();
+  ctx.moveTo(p.x, p.y);
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (drawing) {
+    const p = getTouchPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+});
+canvas.addEventListener('touchend', () => drawing = false);
 
 function openSignature(target) {
   currentTarget = target;
   document.getElementById('signatureModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden'; // 禁止背景滚动
 }
 function closeSignature() {
   document.getElementById('signatureModal').style.display = 'none';
+  document.body.style.overflow = 'auto'; // 恢复滚动
 }
 function clearSignature() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -78,6 +126,7 @@ function confirmSignature() {
   document.getElementById('signature_' + currentTarget).innerHTML = '<img src="' + dataURL + '" width="100%">';
   closeSignature();
 }
+
 function generate() {
   document.getElementById('p_title').textContent = document.getElementById('title').value;
   document.getElementById('p_date').textContent = document.getElementById('date').value;
@@ -98,5 +147,6 @@ function exportImg() {
   });
 }
 </script>
+
 </body>
 </html>
